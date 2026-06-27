@@ -1,0 +1,55 @@
+import { useCallback } from "react";
+import { requireSupabase } from "lib/supabase";
+import { useAsyncResource } from "./useAsyncResource";
+
+async function listContracts() {
+  const client = requireSupabase();
+  const { data, error } = await client
+    .from("contracts")
+    .select(
+      `
+      *,
+      clients(company_name, contact_name),
+      billboards(name, code, region, status),
+      payments(id, amount, payment_date)
+    `
+    )
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
+export function useContracts() {
+  const resource = useAsyncResource(listContracts, []);
+
+  const saveContract = useCallback(async (values, id) => {
+    const client = requireSupabase();
+    const query = id
+      ? client.from("contracts").update(values).eq("id", id)
+      : client.from("contracts").insert(values);
+    const { data, error } = await query.select().single();
+    if (error) {
+      throw error;
+    }
+    return data;
+  }, []);
+
+  const savePayment = useCallback(async (values) => {
+    const client = requireSupabase();
+    const { data, error } = await client
+      .from("payments")
+      .insert(values)
+      .select()
+      .single();
+    if (error) {
+      throw error;
+    }
+    return data;
+  }, []);
+
+  return { ...resource, saveContract, savePayment };
+}

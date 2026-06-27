@@ -1,0 +1,30 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    @apply scroll-smooth;
+  }
+
+  body {
+    @apply bg-slate-50 text-slate-900 antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply tracking-tight text-slate-900;
+  }
+}
+
+@layer components {
+  .panel {
+    @apply rounded-3xl border border-slate-200 bg-white shadow-panel;
+  }
+
+  .panel-muted {
+    @apply rounded-3xl border border-white/10 bg-white/5 backdrop-blur;
+  }
+}

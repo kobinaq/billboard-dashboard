@@ -1,0 +1,7 @@
+project_id = "billboard-dashboard"
+
+[functions.admin-user-upsert]
+verify_jwt = true
+
+[functions.admin-user-deactivate]
+verify_jwt = true
