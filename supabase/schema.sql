@@ -112,12 +112,7 @@ create table if not exists public.contracts (
   start_date date not null,
   end_date date not null,
   monthly_rate numeric not null check (monthly_rate > 0),
-  total_value numeric generated always as (
-    monthly_rate * (
-      ((date_part('year', age(end_date, start_date)) * 12)
-      + date_part('month', age(end_date, start_date))) + 1
-    )
-  ) stored,
+  total_value numeric not null default 0,
   currency text not null default 'GHS',
   payment_status text not null default 'unpaid' check (payment_status in ('unpaid', 'partial', 'paid')),
   amount_paid numeric not null default 0,
@@ -299,6 +294,25 @@ begin
 end;
 $$;
 
+create or replace function public.set_contract_total_value()
+returns trigger
+language plpgsql
+as $$
+declare
+  contract_months integer;
+begin
+  contract_months :=
+    (
+      (extract(year from new.end_date)::integer - extract(year from new.start_date)::integer) * 12
+    ) + (
+      extract(month from new.end_date)::integer - extract(month from new.start_date)::integer
+    ) + 1;
+
+  new.total_value := new.monthly_rate * contract_months;
+  return new;
+end;
+$$;
+
 create or replace function public.sync_contract_statuses()
 returns void
 language plpgsql
@@ -410,6 +424,11 @@ drop trigger if exists contracts_prevent_overlap on public.contracts;
 create trigger contracts_prevent_overlap
 before insert or update on public.contracts
 for each row execute function public.prevent_contract_overlap();
+
+drop trigger if exists contracts_set_total_value on public.contracts;
+create trigger contracts_set_total_value
+before insert or update of monthly_rate, start_date, end_date on public.contracts
+for each row execute function public.set_contract_total_value();
 
 drop trigger if exists contracts_sync_billboards on public.contracts;
 create trigger contracts_sync_billboards
