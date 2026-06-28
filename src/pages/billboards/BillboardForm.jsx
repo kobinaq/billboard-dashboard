@@ -19,6 +19,11 @@ import { getErrorMessage } from "lib/utils";
 
 mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_TOKEN || "";
 
+const optionalMoney = z.preprocess(
+  (value) => (value === "" || value === undefined ? null : value),
+  z.coerce.number().nonnegative().nullable()
+);
+
 const schema = z.object({
   name: z.string().min(3),
   code: z.string().min(3),
@@ -33,6 +38,13 @@ const schema = z.object({
   facing_direction: z.string().optional(),
   traffic_count: z.string().optional(),
   illuminated: z.boolean().default(false),
+  rate_1_2_months: optionalMoney,
+  rate_3_months: optionalMoney,
+  rate_6_months: optionalMoney,
+  rate_12_plus_months: optionalMoney,
+  design_price: optionalMoney,
+  printing_price: optionalMoney,
+  flighting_price: optionalMoney,
   notes: z.string().optional()
 });
 
@@ -69,6 +81,13 @@ export default function BillboardForm() {
       facing_direction: current?.facing_direction || "",
       traffic_count: current?.traffic_count || "",
       illuminated: Boolean(current?.illuminated),
+      rate_1_2_months: current?.rate_1_2_months ?? "",
+      rate_3_months: current?.rate_3_months ?? "",
+      rate_6_months: current?.rate_6_months ?? "",
+      rate_12_plus_months: current?.rate_12_plus_months ?? "",
+      design_price: current?.design_price ?? "",
+      printing_price: current?.printing_price ?? "",
+      flighting_price: current?.flighting_price ?? "",
       notes: current?.notes || ""
     }
   });
@@ -193,6 +212,23 @@ export default function BillboardForm() {
           </label>
           <div className="md:col-span-2">
             <Textarea label="Notes" {...register("notes")} />
+          </div>
+        </Card>
+
+        <Card className="space-y-5">
+          <div>
+            <h4 className="text-lg font-semibold">Public pricing</h4>
+          </div>
+          <div className="grid gap-4 md:grid-cols-4">
+            <Input label="1-2 months monthly" type="number" min="0" error={errors.rate_1_2_months?.message} {...register("rate_1_2_months")} />
+            <Input label="3 months monthly" type="number" min="0" error={errors.rate_3_months?.message} {...register("rate_3_months")} />
+            <Input label="6 months monthly" type="number" min="0" error={errors.rate_6_months?.message} {...register("rate_6_months")} />
+            <Input label="12+ months monthly" type="number" min="0" error={errors.rate_12_plus_months?.message} {...register("rate_12_plus_months")} />
+          </div>
+          <div className="grid gap-4 md:grid-cols-3">
+            <Input label="Design price" type="number" min="0" error={errors.design_price?.message} {...register("design_price")} />
+            <Input label="Printing price" type="number" min="0" error={errors.printing_price?.message} {...register("printing_price")} />
+            <Input label="Flighting price" type="number" min="0" error={errors.flighting_price?.message} {...register("flighting_price")} />
           </div>
         </Card>
 

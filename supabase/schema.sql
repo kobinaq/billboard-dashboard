@@ -84,11 +84,52 @@ create table if not exists public.billboards (
   facing_direction text,
   traffic_count text,
   illuminated boolean not null default false,
+  rate_1_2_months numeric check (rate_1_2_months is null or rate_1_2_months >= 0),
+  rate_3_months numeric check (rate_3_months is null or rate_3_months >= 0),
+  rate_6_months numeric check (rate_6_months is null or rate_6_months >= 0),
+  rate_12_plus_months numeric check (rate_12_plus_months is null or rate_12_plus_months >= 0),
+  design_price numeric check (design_price is null or design_price >= 0),
+  printing_price numeric check (printing_price is null or printing_price >= 0),
+  flighting_price numeric check (flighting_price is null or flighting_price >= 0),
   notes text,
   cover_image_url text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.billboards
+  add column if not exists rate_1_2_months numeric,
+  add column if not exists rate_3_months numeric,
+  add column if not exists rate_6_months numeric,
+  add column if not exists rate_12_plus_months numeric,
+  add column if not exists design_price numeric,
+  add column if not exists printing_price numeric,
+  add column if not exists flighting_price numeric;
+
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conname = 'billboards_rate_1_2_months_non_negative') then
+    alter table public.billboards add constraint billboards_rate_1_2_months_non_negative check (rate_1_2_months is null or rate_1_2_months >= 0);
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'billboards_rate_3_months_non_negative') then
+    alter table public.billboards add constraint billboards_rate_3_months_non_negative check (rate_3_months is null or rate_3_months >= 0);
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'billboards_rate_6_months_non_negative') then
+    alter table public.billboards add constraint billboards_rate_6_months_non_negative check (rate_6_months is null or rate_6_months >= 0);
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'billboards_rate_12_plus_months_non_negative') then
+    alter table public.billboards add constraint billboards_rate_12_plus_months_non_negative check (rate_12_plus_months is null or rate_12_plus_months >= 0);
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'billboards_design_price_non_negative') then
+    alter table public.billboards add constraint billboards_design_price_non_negative check (design_price is null or design_price >= 0);
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'billboards_printing_price_non_negative') then
+    alter table public.billboards add constraint billboards_printing_price_non_negative check (printing_price is null or printing_price >= 0);
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'billboards_flighting_price_non_negative') then
+    alter table public.billboards add constraint billboards_flighting_price_non_negative check (flighting_price is null or flighting_price >= 0);
+  end if;
+end $$;
 
 create table if not exists public.clients (
   id uuid primary key default gen_random_uuid(),
@@ -390,6 +431,95 @@ begin
 end;
 $$;
 
+create or replace function public.public_billboard_availability()
+returns table (
+  billboard_id uuid,
+  name text,
+  code text,
+  type text,
+  status text,
+  width_ft numeric,
+  height_ft numeric,
+  latitude numeric,
+  longitude numeric,
+  address text,
+  region text,
+  facing_direction text,
+  traffic_count text,
+  illuminated boolean,
+  cover_image_url text,
+  rate_1_2_months numeric,
+  rate_3_months numeric,
+  rate_6_months numeric,
+  rate_12_plus_months numeric,
+  design_price numeric,
+  printing_price numeric,
+  flighting_price numeric,
+  occupied_ranges jsonb,
+  next_available_date date
+)
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  with visible_contracts as (
+    select
+      c.billboard_id,
+      c.start_date,
+      c.end_date
+    from public.contracts c
+    where c.status in ('draft', 'active')
+      and c.end_date >= current_date
+  ),
+  grouped_contracts as (
+    select
+      vc.billboard_id,
+      jsonb_agg(
+        jsonb_build_object(
+          'start_date', vc.start_date,
+          'end_date', vc.end_date
+        )
+        order by vc.start_date
+      ) as occupied_ranges,
+      max(vc.end_date) as last_occupied_date
+    from visible_contracts vc
+    group by vc.billboard_id
+  )
+  select
+    b.id as billboard_id,
+    b.name,
+    b.code,
+    b.type,
+    b.status,
+    b.width_ft,
+    b.height_ft,
+    b.latitude,
+    b.longitude,
+    b.address,
+    b.region,
+    b.facing_direction,
+    b.traffic_count,
+    b.illuminated,
+    b.cover_image_url,
+    b.rate_1_2_months,
+    b.rate_3_months,
+    b.rate_6_months,
+    b.rate_12_plus_months,
+    b.design_price,
+    b.printing_price,
+    b.flighting_price,
+    coalesce(gc.occupied_ranges, '[]'::jsonb) as occupied_ranges,
+    case
+      when gc.last_occupied_date is null then current_date
+      else gc.last_occupied_date + 1
+    end as next_available_date
+  from public.billboards b
+  left join grouped_contracts gc on gc.billboard_id = b.id
+  where b.status <> 'retired'
+  order by b.region, b.name;
+$$;
+
 drop trigger if exists profiles_set_updated_at on public.profiles;
 create trigger profiles_set_updated_at
 before update on public.profiles
@@ -449,6 +579,8 @@ alter table public.contracts enable row level security;
 alter table public.inspection_logs enable row level security;
 alter table public.inspection_photos enable row level security;
 alter table public.payments enable row level security;
+
+grant execute on function public.public_billboard_availability() to anon, authenticated;
 
 drop policy if exists "profiles_self_read" on public.profiles;
 create policy "profiles_self_read"

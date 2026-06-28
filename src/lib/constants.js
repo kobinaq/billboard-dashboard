@@ -1,6 +1,7 @@
 import {
   BarChart3,
   BriefcaseBusiness,
+  CalendarRange,
   ClipboardList,
   CreditCard,
   LayoutDashboard,
@@ -48,6 +49,7 @@ export const INTERNAL_NAV = [
       { label: "Billboards", to: "/billboards", icon: MapPinned },
       { label: "Clients", to: "/clients", icon: UserSquare2 },
       { label: "Contracts", to: "/contracts", icon: BriefcaseBusiness },
+      { label: "Timeline", to: "/contracts/calendar", icon: CalendarRange },
       { label: "Inspections", to: "/inspections", icon: ClipboardList },
       { label: "Payments", to: "/payments", icon: CreditCard }
     ]

@@ -8,7 +8,7 @@ import { StatusBadge } from "components/ui/StatusBadge";
 import { Table } from "components/ui/Table";
 import { useAuth } from "context/AuthContext";
 import { useBillboards } from "hooks/useBillboards";
-import { formatDate } from "lib/utils";
+import { formatCurrency, formatDate } from "lib/utils";
 
 export default function BillboardDetail() {
   const { id } = useParams();
@@ -102,6 +102,22 @@ export default function BillboardDetail() {
             <Metric label="Coordinates" value={`${billboard.latitude}, ${billboard.longitude}`} />
           </div>
           <div>
+            <p className="text-sm font-semibold text-slate-800">Public rate card</p>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <Metric label="1-2 months" value={formatPrice(billboard.rate_1_2_months)} />
+              <Metric label="3 months" value={formatPrice(billboard.rate_3_months)} />
+              <Metric label="6 months" value={formatPrice(billboard.rate_6_months)} />
+              <Metric label="12+ months" value={formatPrice(billboard.rate_12_plus_months)} />
+              {billboard.type !== "digital" ? (
+                <>
+                  <Metric label="Design" value={formatPrice(billboard.design_price)} />
+                  <Metric label="Printing" value={formatPrice(billboard.printing_price)} />
+                  <Metric label="Flighting" value={formatPrice(billboard.flighting_price)} />
+                </>
+              ) : null}
+            </div>
+          </div>
+          <div>
             <p className="text-sm font-semibold text-slate-800">Notes</p>
             <p className="mt-2 text-sm leading-6 text-slate-600">
               {billboard.notes || "No notes recorded for this board yet."}
@@ -160,6 +176,10 @@ export default function BillboardDetail() {
       </div>
     </div>
   );
+}
+
+function formatPrice(value) {
+  return value === null || value === undefined ? "--" : formatCurrency(value);
 }
 
 function Metric({ label, value }) {

@@ -2,6 +2,8 @@
 
 ThinkAloud Billboard Dashboard is a React + Supabase application for managing billboard inventory, contracts, payments, inspections, and client portal access from one responsive workspace.
 
+It also includes a public `/availability` page where prospects can view billboard availability and public rate cards without signing in.
+
 ## Stack
 
 - React 18 with Create React App
@@ -23,6 +25,7 @@ The app follows the structure described in the product prompt:
 - `src/hooks` for Supabase-backed data access
 - `src/lib` for constants, Supabase setup, and helpers
 - `supabase/schema.sql` for schema, RLS, triggers, and storage policies
+- public availability data is exposed through a sanitized Supabase RPC, not direct anonymous reads on private business tables
 - `.github/workflows/keep-alive.yml` for Supabase free-tier uptime support
 
 ## Local Setup
