@@ -4,7 +4,7 @@ import { useApp } from "context/AppContext";
 import { useAuth } from "context/AuthContext";
 import { getInitials, titleCase } from "lib/utils";
 
-export function TopBar({ title, subtitle }) {
+export function TopBar({ title }) {
   const { toggleSidebar } = useApp();
   const { profile, logout } = useAuth();
 
@@ -18,10 +18,7 @@ export function TopBar({ title, subtitle }) {
         >
           <Menu className="h-4 w-4" />
         </button>
-        <div>
-          <h2 className="text-2xl font-semibold">{title}</h2>
-          {subtitle ? <p className="mt-1 text-sm text-slate-500">{subtitle}</p> : null}
-        </div>
+        <h2 className="text-2xl font-semibold">{title}</h2>
       </div>
       <div className="flex items-center gap-3">
         <div className="hidden rounded-2xl border border-slate-200 bg-white px-4 py-2 sm:block">

@@ -38,5 +38,18 @@ export function useInspections() {
     return data;
   }, []);
 
-  return { ...resource, saveInspection };
+  const saveInspectionPhoto = useCallback(async (values) => {
+    const client = requireSupabase();
+    const { data, error } = await client
+      .from("inspection_photos")
+      .insert(values)
+      .select()
+      .single();
+    if (error) {
+      throw error;
+    }
+    return data;
+  }, []);
+
+  return { ...resource, saveInspection, saveInspectionPhoto };
 }

@@ -58,3 +58,25 @@ export function isWithinDays(dateValue, days) {
   const diff = date.getTime() - now.getTime();
   return diff >= 0 && diff <= days * 24 * 60 * 60 * 1000;
 }
+
+export function startOfMonth(value) {
+  const date = new Date(value);
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+}
+
+export function endOfMonth(value) {
+  const date = new Date(value);
+  return new Date(date.getFullYear(), date.getMonth() + 1, 0);
+}
+
+export function addMonths(value, count) {
+  const date = new Date(value);
+  return new Date(date.getFullYear(), date.getMonth() + count, 1);
+}
+
+export function diffInDays(start, end) {
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+  const millisecondsPerDay = 24 * 60 * 60 * 1000;
+  return Math.round((endDate.getTime() - startDate.getTime()) / millisecondsPerDay);
+}

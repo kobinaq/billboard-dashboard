@@ -3,18 +3,14 @@ import { Card } from "components/ui/Card";
 import { EmptyState } from "components/ui/EmptyState";
 import { useAuth } from "context/AuthContext";
 import { useContracts } from "hooks/useContracts";
+import { getClientVisibleContracts } from "lib/contracts";
 import { formatDate } from "lib/utils";
 
 export default function ClientPortalBoards() {
   const { profile } = useAuth();
   const { data } = useContracts();
   const myContracts = useMemo(
-    () =>
-      (data || []).filter(
-        (contract) =>
-          contract.clients?.contact_email?.toLowerCase() === profile?.email?.toLowerCase() ||
-          contract.clients?.company_name === profile?.company_name
-      ),
+    () => getClientVisibleContracts(data || [], profile),
     [data, profile]
   );
 

@@ -74,11 +74,40 @@ const userSchema = z
     }
   });
 
+const lookupSchema = z.object({
+  id: z.string().optional(),
+  name: z.string().min(2, "Enter a name.")
+});
+
+async function saveLookup(table, values) {
+  const client = requireSupabase();
+  const payload = { name: values.name.trim() };
+  const query = values.id
+    ? client.from(table).update(payload).eq("id", values.id)
+    : client.from(table).insert(payload);
+  const { data, error } = await query.select().single();
+  if (error) {
+    throw error;
+  }
+  return data;
+}
+
+async function deleteLookup(table, id) {
+  const client = requireSupabase();
+  const { error } = await client.from(table).delete().eq("id", id);
+  if (error) {
+    throw error;
+  }
+}
+
 export default function SettingsPage() {
   const { data, loading, error, refresh } = useAsyncResource(loadSettingsData);
   const [userModalOpen, setUserModalOpen] = useState(false);
   const [deactivateModalOpen, setDeactivateModalOpen] = useState(false);
+  const [lookupModalOpen, setLookupModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [selectedLookup, setSelectedLookup] = useState(null);
+  const [lookupTable, setLookupTable] = useState("regions");
   const [submitting, setSubmitting] = useState(false);
   const [deactivateReason, setDeactivateReason] = useState("");
 
@@ -114,6 +143,19 @@ export default function SettingsPage() {
       industry: "",
       address: "",
       notes: ""
+    }
+  });
+
+  const {
+    register: registerLookup,
+    handleSubmit: handleLookupSubmit,
+    reset: resetLookup,
+    formState: { errors: lookupErrors }
+  } = useForm({
+    resolver: zodResolver(lookupSchema),
+    defaultValues: {
+      id: "",
+      name: ""
     }
   });
 
@@ -176,6 +218,16 @@ export default function SettingsPage() {
     setDeactivateModalOpen(true);
   }
 
+  function openLookupModal(table, entry = null) {
+    setLookupTable(table);
+    setSelectedLookup(entry);
+    resetLookup({
+      id: entry?.id || "",
+      name: entry?.name || ""
+    });
+    setLookupModalOpen(true);
+  }
+
   async function onSubmitUser(values) {
     setSubmitting(true);
     try {
@@ -219,6 +271,31 @@ export default function SettingsPage() {
     }
   }
 
+  async function onSubmitLookup(values) {
+    setSubmitting(true);
+    try {
+      await saveLookup(lookupTable, values);
+      toast.success(selectedLookup ? "Lookup updated." : "Lookup created.");
+      setLookupModalOpen(false);
+      setSelectedLookup(null);
+      await refresh();
+    } catch (submitError) {
+      toast.error(getErrorMessage(submitError));
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleDeleteLookup(table, entry) {
+    try {
+      await deleteLookup(table, entry.id);
+      toast.success("Lookup deleted.");
+      await refresh();
+    } catch (deleteError) {
+      toast.error(getErrorMessage(deleteError));
+    }
+  }
+
   const userColumns = [
     { key: "full_name", header: "Name" },
     { key: "email", header: "Email" },
@@ -256,18 +333,31 @@ export default function SettingsPage() {
     }
   ];
 
+  const lookupColumns = (table) => [
+    { key: "name", header: table === "regions" ? "Region" : "Type" },
+    {
+      key: "actions",
+      header: "Actions",
+      render: (row) => (
+        <div className="flex flex-wrap gap-2">
+          <Button variant="secondary" onClick={() => openLookupModal(table, row)}>
+            Edit
+          </Button>
+          <Button variant="danger" onClick={() => handleDeleteLookup(table, row)}>
+            Delete
+          </Button>
+        </div>
+      )
+    }
+  ];
+
   return (
     <div className="space-y-6">
       <SetupNotice />
       <div className="grid gap-6 xl:grid-cols-3">
         <Card className="xl:col-span-2 space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h4 className="text-lg font-semibold">Users</h4>
-              <p className="text-sm text-slate-500">
-                Invite, update, and softly deactivate accounts through Supabase Edge Functions.
-              </p>
-            </div>
+            <h4 className="text-lg font-semibold">Users</h4>
             <Button onClick={openCreateModal}>Create user</Button>
           </div>
 
@@ -316,19 +406,29 @@ export default function SettingsPage() {
             Inactive users are blocked after the next profile check even if they still have a valid auth session.
           </p>
           <p className="text-sm text-slate-500">
-            Client-role users can link to an existing client record or create one during invite.
+            Regions and billboard types are now managed directly from this screen.
           </p>
         </Card>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <h4 className="mb-4 text-lg font-semibold">Regions</h4>
-          <Table columns={[{ key: "name", header: "Region" }]} rows={data?.regions || []} onSort={() => {}} />
+        <Card className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h4 className="text-lg font-semibold">Regions</h4>
+            <Button variant="secondary" onClick={() => openLookupModal("regions")}>
+              Add region
+            </Button>
+          </div>
+          <Table columns={lookupColumns("regions")} rows={data?.regions || []} onSort={() => {}} />
         </Card>
-        <Card>
-          <h4 className="mb-4 text-lg font-semibold">Billboard Types</h4>
-          <Table columns={[{ key: "name", header: "Type" }]} rows={data?.types || []} onSort={() => {}} />
+        <Card className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h4 className="text-lg font-semibold">Billboard Types</h4>
+            <Button variant="secondary" onClick={() => openLookupModal("billboard_types")}>
+              Add type
+            </Button>
+          </div>
+          <Table columns={lookupColumns("billboard_types")} rows={data?.types || []} onSort={() => {}} />
         </Card>
       </div>
 
@@ -344,19 +444,14 @@ export default function SettingsPage() {
             <Input label="Full name" error={errors.fullName?.message} {...register("fullName")} />
             <Input label="Email" type="email" error={errors.email?.message} {...register("email")} />
             <Input label="Phone" {...register("phone")} />
-            <Select
-              label="Role"
-              options={ROLES}
-              error={errors.role?.message}
-              {...register("role")}
-            />
+            <Select label="Role" options={ROLES} error={errors.role?.message} {...register("role")} />
             {selectedRole === "client" ? (
               <>
                 <Select
                   label="Link existing client"
                   options={(data?.clients || []).map((client) => ({
                     value: client.id,
-                    label: `${client.company_name} • ${client.contact_email}`
+                    label: `${client.company_name} - ${client.contact_email}`
                   }))}
                   {...register("clientId")}
                 />
@@ -370,14 +465,22 @@ export default function SettingsPage() {
               </>
             ) : null}
             <div className="md:col-span-2">
-              <Textarea
-                label="Notes"
-                placeholder="Optional admin note for client-link creation."
-                {...register("notes")}
-              />
+              <Textarea label="Notes" placeholder="Optional admin note." {...register("notes")} />
             </div>
           </div>
           <FormActions submitting={submitting} onCancel={() => setUserModalOpen(false)} />
+        </form>
+      </Modal>
+
+      <Modal
+        open={lookupModalOpen}
+        title={selectedLookup ? "Edit lookup value" : "Add lookup value"}
+        onClose={() => setLookupModalOpen(false)}
+      >
+        <form className="space-y-4" onSubmit={handleLookupSubmit(onSubmitLookup)}>
+          <input type="hidden" {...registerLookup("id")} />
+          <Input label="Name" error={lookupErrors.name?.message} {...registerLookup("name")} />
+          <FormActions submitting={submitting} onCancel={() => setLookupModalOpen(false)} />
         </form>
       </Modal>
 
@@ -388,7 +491,7 @@ export default function SettingsPage() {
       >
         <div className="space-y-4">
           <p className="text-sm text-slate-500">
-            This keeps the user’s history intact and blocks them on the next profile check.
+            This keeps the user's history intact and blocks them on the next profile check.
           </p>
           <Textarea
             label="Reason"

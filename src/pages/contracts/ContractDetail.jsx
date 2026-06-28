@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { jsPDF } from "jspdf";
 import toast from "react-hot-toast";
 import { Button } from "components/ui/Button";
 import { Card } from "components/ui/Card";
@@ -11,15 +12,46 @@ import { StatusBadge } from "components/ui/StatusBadge";
 import { Table } from "components/ui/Table";
 import { useAuth } from "context/AuthContext";
 import { useContracts } from "hooks/useContracts";
-import { formatCurrency, formatDate } from "lib/utils";
+import { createSignedFileUrl, uploadPrivateFile } from "lib/storage";
+import { formatCurrency, formatDate, getErrorMessage } from "lib/utils";
 
 export default function ContractDetail() {
   const navigate = useNavigate();
   const { id } = useParams();
   const { profile } = useAuth();
-  const { data, loading, error, savePayment, refresh } = useContracts();
+  const { data, loading, error, savePayment, refresh, attachArtwork } = useContracts();
   const [recordOpen, setRecordOpen] = useState(false);
+  const [artworkFile, setArtworkFile] = useState(null);
+  const [artworkUrl, setArtworkUrl] = useState("");
+  const [uploadingArtwork, setUploadingArtwork] = useState(false);
   const contract = useMemo(() => (data || []).find((item) => item.id === id), [data, id]);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadArtwork() {
+      if (!contract?.artwork_url) {
+        setArtworkUrl("");
+        return;
+      }
+
+      try {
+        const signedUrl = await createSignedFileUrl("contract-artwork", contract.artwork_url);
+        if (active) {
+          setArtworkUrl(signedUrl);
+        }
+      } catch {
+        if (active) {
+          setArtworkUrl("");
+        }
+      }
+    }
+
+    loadArtwork();
+    return () => {
+      active = false;
+    };
+  }, [contract?.artwork_url]);
 
   async function handleQuickPayment() {
     if (!contract) {
@@ -42,6 +74,68 @@ export default function ContractDetail() {
     }
   }
 
+  async function handleArtworkUpload() {
+    if (!contract || !artworkFile) {
+      return;
+    }
+
+    setUploadingArtwork(true);
+    try {
+      const { path } = await uploadPrivateFile(
+        "contract-artwork",
+        `contracts/${contract.id}/artwork`,
+        artworkFile
+      );
+      await attachArtwork(contract.id, path);
+      toast.success("Artwork uploaded.");
+      setArtworkFile(null);
+      await refresh();
+    } catch (uploadError) {
+      toast.error(getErrorMessage(uploadError));
+    } finally {
+      setUploadingArtwork(false);
+    }
+  }
+
+  function downloadContractPdf() {
+    if (!contract) {
+      return;
+    }
+
+    const doc = new jsPDF();
+    const rows = [
+      ["Contract #", contract.contract_number],
+      ["Client", contract.clients?.company_name || "--"],
+      ["Billboard", contract.billboards?.name || "--"],
+      ["Period", `${formatDate(contract.start_date)} - ${formatDate(contract.end_date)}`],
+      ["Monthly rate", formatCurrency(contract.monthly_rate)],
+      ["Total value", formatCurrency(contract.total_value)],
+      ["Amount paid", formatCurrency(contract.amount_paid)],
+      [
+        "Balance",
+        formatCurrency(Number(contract.total_value || 0) - Number(contract.amount_paid || 0))
+      ],
+      ["Payment status", contract.payment_status],
+      ["Contract status", contract.status],
+      ["Notes", contract.notes || "--"]
+    ];
+
+    doc.setFontSize(18);
+    doc.text("ThinkAloud Contract Summary", 14, 18);
+    doc.setFontSize(11);
+
+    let y = 32;
+    rows.forEach(([label, value]) => {
+      doc.setFont(undefined, "bold");
+      doc.text(`${label}:`, 14, y);
+      doc.setFont(undefined, "normal");
+      doc.text(String(value), 62, y, { maxWidth: 130 });
+      y += label === "Notes" ? 18 : 10;
+    });
+
+    doc.save(`${contract.contract_number}.pdf`);
+  }
+
   if (loading) {
     return <LoadingSpinner label="Loading contract..." />;
   }
@@ -62,14 +156,14 @@ export default function ContractDetail() {
             <StatusBadge value={contract.payment_status} />
           </div>
           <p className="text-sm text-slate-500">
-            {contract.clients?.company_name} • {contract.billboards?.name}
+            {contract.clients?.company_name} - {contract.billboards?.name}
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
           <Button variant="secondary" onClick={() => navigate(`/contracts/${id}/edit`)}>
             Edit contract
           </Button>
-          <Button variant="secondary" onClick={() => window.print()}>
+          <Button variant="secondary" onClick={downloadContractPdf}>
             Download PDF summary
           </Button>
           <Button onClick={() => setRecordOpen(true)}>Record payment</Button>
@@ -91,14 +185,31 @@ export default function ContractDetail() {
         <div className="space-y-6">
           <Card className="space-y-4">
             <div className="flex items-center justify-between">
-              <div>
-                <h4 className="text-lg font-semibold">Artwork upload</h4>
-                <p className="text-sm text-slate-500">
-                  Store artwork in the private contract-artwork bucket.
-                </p>
-              </div>
+              <h4 className="text-lg font-semibold">Artwork upload</h4>
+              {artworkUrl ? (
+                <a
+                  href={artworkUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-sm font-semibold text-brand-700"
+                >
+                  Open current artwork
+                </a>
+              ) : null}
             </div>
-            <FileUpload label="Client artwork" accept="image/*,.pdf" />
+            <FileUpload
+              label="Client artwork"
+              accept="image/*,.pdf"
+              onChange={(event) => setArtworkFile(event.target.files?.[0] || null)}
+            />
+            {artworkFile ? (
+              <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
+                <span>{artworkFile.name}</span>
+                <Button onClick={handleArtworkUpload} disabled={uploadingArtwork}>
+                  {uploadingArtwork ? "Uploading..." : "Upload artwork"}
+                </Button>
+              </div>
+            ) : null}
           </Card>
 
           <Card>

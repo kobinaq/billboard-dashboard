@@ -6,6 +6,7 @@ import { StatusBadge } from "components/ui/StatusBadge";
 import { useAuth } from "context/AuthContext";
 import { useContracts } from "hooks/useContracts";
 import { useInspections } from "hooks/useInspections";
+import { getClientVisibleContracts } from "lib/contracts";
 import { formatDate } from "lib/utils";
 
 export default function ClientPortal() {
@@ -16,12 +17,7 @@ export default function ClientPortal() {
   const error = contracts.error || inspections.error;
 
   const myContracts = useMemo(
-    () =>
-      (contracts.data || []).filter(
-        (contract) =>
-          contract.clients?.contact_email?.toLowerCase() === profile?.email?.toLowerCase() ||
-          contract.clients?.company_name === profile?.company_name
-      ),
+    () => getClientVisibleContracts(contracts.data || [], profile),
     [contracts.data, profile]
   );
 

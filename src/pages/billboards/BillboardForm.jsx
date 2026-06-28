@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import mapboxgl from "mapbox-gl";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -12,11 +13,11 @@ import { Select } from "components/ui/Select";
 import { Textarea } from "components/ui/Textarea";
 import { PageHeader } from "components/shared/PageHeader";
 import { useBillboards } from "hooks/useBillboards";
-import {
-  BILLBOARD_STATUSES,
-  BILLBOARD_TYPES
-} from "lib/constants";
+import { BILLBOARD_STATUSES, BILLBOARD_TYPES } from "lib/constants";
+import { uploadPublicFile } from "lib/storage";
 import { getErrorMessage } from "lib/utils";
+
+mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_TOKEN || "";
 
 const schema = z.object({
   name: z.string().min(3),
@@ -39,8 +40,13 @@ export default function BillboardForm() {
   const navigate = useNavigate();
   const { id } = useParams();
   const [submitting, setSubmitting] = useState(false);
-  const { data, saveBillboard } = useBillboards();
+  const [coverFile, setCoverFile] = useState(null);
+  const [coverPreview, setCoverPreview] = useState("");
+  const { data, saveBillboard, updateCoverImage } = useBillboards();
   const current = useMemo(() => (data || []).find((item) => item.id === id), [data, id]);
+  const mapContainerRef = useRef(null);
+  const mapRef = useRef(null);
+  const markerRef = useRef(null);
   const {
     register,
     handleSubmit,
@@ -67,10 +73,82 @@ export default function BillboardForm() {
     }
   });
 
+  const latitude = watch("latitude");
+  const longitude = watch("longitude");
+
+  useEffect(() => {
+    if (current?.cover_image_url) {
+      setCoverPreview(current.cover_image_url);
+    }
+  }, [current]);
+
+  useEffect(() => {
+    if (!mapContainerRef.current || mapRef.current || !process.env.REACT_APP_MAPBOX_TOKEN) {
+      return;
+    }
+
+    mapRef.current = new mapboxgl.Map({
+      container: mapContainerRef.current,
+      style: "mapbox://styles/mapbox/light-v11",
+      center: [Number(longitude), Number(latitude)],
+      zoom: 11
+    });
+
+    mapRef.current.addControl(new mapboxgl.NavigationControl(), "top-right");
+
+    markerRef.current = new mapboxgl.Marker({ color: "#1b4332" })
+      .setLngLat([Number(longitude), Number(latitude)])
+      .addTo(mapRef.current);
+
+    mapRef.current.on("click", (event) => {
+      const nextLatitude = Number(event.lngLat.lat.toFixed(6));
+      const nextLongitude = Number(event.lngLat.lng.toFixed(6));
+      setValue("latitude", nextLatitude, { shouldDirty: true });
+      setValue("longitude", nextLongitude, { shouldDirty: true });
+      markerRef.current?.setLngLat([nextLongitude, nextLatitude]);
+    });
+
+    return () => {
+      mapRef.current?.remove();
+      mapRef.current = null;
+      markerRef.current = null;
+    };
+  }, [latitude, longitude, setValue]);
+
+  useEffect(() => {
+    if (!mapRef.current || !markerRef.current) {
+      return;
+    }
+
+    const nextLngLat = [Number(longitude), Number(latitude)];
+    markerRef.current.setLngLat(nextLngLat);
+    mapRef.current.flyTo({ center: nextLngLat, essential: false, zoom: mapRef.current.getZoom() });
+  }, [latitude, longitude]);
+
+  function handleCoverChange(event) {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    setCoverFile(file);
+    setCoverPreview(URL.createObjectURL(file));
+  }
+
   async function onSubmit(values) {
     setSubmitting(true);
     try {
-      await saveBillboard(values, id);
+      const billboard = await saveBillboard(values, id);
+
+      if (coverFile) {
+        const { publicUrl } = await uploadPublicFile(
+          "billboard-media",
+          `billboards/${billboard.id}/cover`,
+          coverFile
+        );
+        await updateCoverImage(billboard.id, publicUrl);
+      }
+
       toast.success(id ? "Billboard updated." : "Billboard created.");
       navigate("/billboards");
     } catch (error) {
@@ -82,20 +160,12 @@ export default function BillboardForm() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title={id ? "Edit Billboard" : "Add Billboard"}
-        description="Capture the physical details, positioning, and visibility metadata for a board."
-      />
+      <PageHeader title={id ? "Edit Billboard" : "Add Billboard"} />
       <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
         <Card className="grid gap-4 md:grid-cols-2">
           <Input label="Name" error={errors.name?.message} {...register("name")} />
           <Input label="Code" error={errors.code?.message} {...register("code")} />
-          <Select
-            label="Type"
-            options={BILLBOARD_TYPES}
-            error={errors.type?.message}
-            {...register("type")}
-          />
+          <Select label="Type" options={BILLBOARD_TYPES} error={errors.type?.message} {...register("type")} />
           <Select
             label="Status"
             options={BILLBOARD_STATUSES}
@@ -129,13 +199,29 @@ export default function BillboardForm() {
         <Card className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
           <div className="space-y-4">
             <h4 className="text-lg font-semibold">Media</h4>
-            <FileUpload label="Cover image" accept="image/*" helperText="Store the board cover in the billboard-media bucket." />
+            <FileUpload
+              label="Cover image"
+              accept="image/*"
+              helperText="Uploads directly to the billboard-media bucket."
+              onChange={handleCoverChange}
+            />
+            {coverPreview ? (
+              <img
+                src={coverPreview}
+                alt="Billboard cover preview"
+                className="h-56 w-full rounded-[1.75rem] object-cover"
+              />
+            ) : null}
           </div>
           <div className="space-y-4">
             <h4 className="text-lg font-semibold">Coordinate picker</h4>
-            <div className="flex min-h-64 items-center justify-center rounded-[1.75rem] border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500">
-              Map click-to-place support should be enabled once Mapbox credentials are configured. The numeric latitude and longitude fields are already active for immediate use.
-            </div>
+            {process.env.REACT_APP_MAPBOX_TOKEN ? (
+              <div ref={mapContainerRef} className="min-h-72 rounded-[1.75rem]" />
+            ) : (
+              <div className="flex min-h-64 items-center justify-center rounded-[1.75rem] border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500">
+                Add REACT_APP_MAPBOX_TOKEN to enable click-to-place board coordinates.
+              </div>
+            )}
           </div>
         </Card>
 

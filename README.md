@@ -72,7 +72,8 @@ supabase secrets set SITE_URL=https://your-app-url
 
 6. In Authentication, create the initial admin user manually.
 7. Update that user in `profiles` so `role = 'admin'`.
-8. Seed any additional regions or billboard types in the Settings UI or directly in the database.
+8. Optional: run [`supabase/seed.sql`](supabase/seed.sql) to populate removable sample data for dashboard, calendar, inspections, and payments.
+9. Seed any additional regions or billboard types in the Settings UI or directly in the database.
 
 ## Initial Admin User
 
@@ -89,6 +90,30 @@ where email = 'admin@thinkaloud.com';
 ```
 
 3. Sign in through `/login`.
+
+## Sample Data
+
+Use [`supabase/seed.sql`](supabase/seed.sql) if you want a non-production demo dataset.
+
+What it adds:
+- multiple billboards across several regions and statuses
+- multiple clients
+- staggered contracts so the calendar shows real occupied periods
+- payments, inspections, and inspection photos
+
+What it does not add:
+- working auth/demo users
+
+How to apply it:
+1. Run `supabase/schema.sql`
+2. Create at least one active internal user manually in Supabase Auth so inspections can attach to a real admin, sales, or inspector profile
+3. Run `supabase/seed.sql`
+
+How to remove it:
+- rerun `supabase/seed.sql` after modifying or removing the sample inserts, or
+- reset the database and rerun only `supabase/schema.sql`
+
+The sample rows are tagged with `[sample]` in their notes so they are easy to identify.
 
 ## Storage Conventions
 
@@ -119,10 +144,10 @@ If you are on the Supabase free tier:
 
 ## Notes and Limitations
 
-- The UI is wired to live Supabase tables and does not include mock data.
+- The UI is wired to live Supabase tables and does not include hardcoded mock data in the frontend.
 - Admin-managed user creation, client invites, and deactivation now run through Supabase Edge Functions and require the function secrets above.
 - User deactivation in this version is soft deactivation through `profiles.is_active = false`; it preserves auth history and business data.
-- The contract calendar is intentionally lightweight in this first implementation and can be upgraded to a richer Gantt-style visualization later.
+- Demo business data can be loaded through `supabase/seed.sql`, but auth users are still created manually.
 
 ## Verification Checklist
 

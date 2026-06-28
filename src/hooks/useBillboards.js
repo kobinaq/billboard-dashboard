@@ -44,5 +44,19 @@ export function useBillboards() {
     return data;
   }, []);
 
-  return { ...resource, saveBillboard };
+  const updateCoverImage = useCallback(async (id, coverImageUrl) => {
+    const client = requireSupabase();
+    const { data, error } = await client
+      .from("billboards")
+      .update({ cover_image_url: coverImageUrl })
+      .eq("id", id)
+      .select()
+      .single();
+    if (error) {
+      throw error;
+    }
+    return data;
+  }, []);
+
+  return { ...resource, saveBillboard, updateCoverImage };
 }

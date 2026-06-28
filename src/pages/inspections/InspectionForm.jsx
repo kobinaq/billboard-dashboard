@@ -15,6 +15,7 @@ import { useAuth } from "context/AuthContext";
 import { useBillboards } from "hooks/useBillboards";
 import { useInspections } from "hooks/useInspections";
 import { CONDITIONS } from "lib/constants";
+import { uploadPublicFile } from "lib/storage";
 import { getErrorMessage } from "lib/utils";
 
 const schema = z.object({
@@ -35,8 +36,9 @@ export default function InspectionForm() {
   const [searchParams] = useSearchParams();
   const { profile } = useAuth();
   const { data: billboards } = useBillboards();
-  const { saveInspection } = useInspections();
+  const { saveInspection, saveInspectionPhoto } = useInspections();
   const [submitting, setSubmitting] = useState(false);
+  const [photoEntries, setPhotoEntries] = useState([]);
   const {
     register,
     handleSubmit,
@@ -59,10 +61,47 @@ export default function InspectionForm() {
     }
   });
 
+  function handlePhotosChange(event) {
+    const files = Array.from(event.target.files || []);
+    setPhotoEntries(
+      files.map((file) => ({
+        file,
+        caption: ""
+      }))
+    );
+  }
+
+  function updateCaption(index, caption) {
+    setPhotoEntries((current) =>
+      current.map((entry, entryIndex) =>
+        entryIndex === index ? { ...entry, caption } : entry
+      )
+    );
+  }
+
   async function onSubmit(values) {
     setSubmitting(true);
     try {
-      await saveInspection({ ...values, inspector_id: profile?.id });
+      const inspection = await saveInspection({ ...values, inspector_id: profile?.id });
+
+      if (photoEntries.length) {
+        await Promise.all(
+          photoEntries.map(async (entry) => {
+            const { publicUrl } = await uploadPublicFile(
+              "billboard-media",
+              `inspections/${inspection.id}`,
+              entry.file
+            );
+
+            await saveInspectionPhoto({
+              inspection_id: inspection.id,
+              photo_url: publicUrl,
+              caption: entry.caption || null
+            });
+          })
+        );
+      }
+
       toast.success("Inspection logged.");
       navigate("/inspections");
     } catch (error) {
@@ -74,17 +113,14 @@ export default function InspectionForm() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Log Inspection"
-        description="Designed for mobile field use with large inputs, quick toggles, and camera-friendly uploads."
-      />
+      <PageHeader title="Log Inspection" />
       <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
         <Card className="grid gap-4 md:grid-cols-2">
           <Select
             label="Billboard"
             options={(billboards || []).map((board) => ({
               value: board.id,
-              label: `${board.code} • ${board.name}`
+              label: `${board.code} - ${board.name}`
             }))}
             error={errors.billboard_id?.message}
             {...register("billboard_id")}
@@ -145,14 +181,32 @@ export default function InspectionForm() {
           </div>
         </Card>
 
-        <Card>
+        <Card className="space-y-4">
           <FileUpload
             label="Inspection photos"
             multiple
             accept="image/*"
             capture="environment"
             helperText="Use the rear camera on mobile devices or upload multiple existing images."
+            onChange={handlePhotosChange}
           />
+          {photoEntries.length ? (
+            <div className="space-y-3">
+              {photoEntries.map((entry, index) => (
+                <div
+                  key={`${entry.file.name}-${index}`}
+                  className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
+                >
+                  <p className="text-sm font-semibold text-slate-900">{entry.file.name}</p>
+                  <Input
+                    label="Caption"
+                    value={entry.caption}
+                    onChange={(event) => updateCaption(index, event.target.value)}
+                  />
+                </div>
+              ))}
+            </div>
+          ) : null}
         </Card>
 
         <FormActions submitting={submitting} onCancel={() => navigate("/inspections")} />

@@ -5,18 +5,14 @@ import { StatusBadge } from "components/ui/StatusBadge";
 import { Table } from "components/ui/Table";
 import { useAuth } from "context/AuthContext";
 import { useContracts } from "hooks/useContracts";
+import { getClientVisibleContracts } from "lib/contracts";
 import { formatCurrency, formatDate } from "lib/utils";
 
 export default function ClientPortalContracts() {
   const { profile } = useAuth();
   const { data } = useContracts();
   const rows = useMemo(
-    () =>
-      (data || []).filter(
-        (contract) =>
-          contract.clients?.contact_email?.toLowerCase() === profile?.email?.toLowerCase() ||
-          contract.clients?.company_name === profile?.company_name
-      ),
+    () => getClientVisibleContracts(data || [], profile),
     [data, profile]
   );
 

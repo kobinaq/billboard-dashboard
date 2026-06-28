@@ -9,8 +9,8 @@ async function listContracts() {
     .select(
       `
       *,
-      clients(company_name, contact_name),
-      billboards(name, code, region, status),
+      clients(id, profile_id, company_name, contact_name, contact_email),
+      billboards(name, code, region, status, address),
       payments(id, amount, payment_date)
     `
     )
@@ -51,5 +51,19 @@ export function useContracts() {
     return data;
   }, []);
 
-  return { ...resource, saveContract, savePayment };
+  const attachArtwork = useCallback(async (id, artworkUrl) => {
+    const client = requireSupabase();
+    const { data, error } = await client
+      .from("contracts")
+      .update({ artwork_url: artworkUrl })
+      .eq("id", id)
+      .select()
+      .single();
+    if (error) {
+      throw error;
+    }
+    return data;
+  }, []);
+
+  return { ...resource, saveContract, savePayment, attachArtwork };
 }
