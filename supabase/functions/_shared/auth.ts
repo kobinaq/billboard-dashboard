@@ -1,9 +1,20 @@
 import { createClient } from "npm:@supabase/supabase-js@2.49.8";
 import { jsonResponse } from "./http.ts";
 
-const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
-const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
-const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+function getEnv(...names: string[]) {
+  for (const name of names) {
+    const value = Deno.env.get(name);
+    if (value) {
+      return value;
+    }
+  }
+
+  return "";
+}
+
+const supabaseUrl = getEnv("PROJECT_URL", "SUPABASE_URL");
+const supabaseAnonKey = getEnv("ANON_KEY", "SUPABASE_ANON_KEY");
+const serviceRoleKey = getEnv("SERVICE_ROLE_KEY", "SUPABASE_SERVICE_ROLE_KEY");
 
 export function createServiceClient() {
   return createClient(supabaseUrl, serviceRoleKey, {

@@ -14,15 +14,39 @@ export function getClientVisibleContracts(contracts, profile) {
   });
 }
 
-export function buildContractTimeline(contracts) {
+function startOfWindow(contracts, fallbackDate) {
+  if (fallbackDate) {
+    return startOfMonth(fallbackDate);
+  }
+
+  const starts = contracts.map((contract) => new Date(contract.start_date));
+  return startOfMonth(new Date(Math.min(...starts.map((date) => date.getTime()))));
+}
+
+export function buildContractTimeline(contracts, options = {}) {
   if (!contracts?.length) {
     return null;
   }
 
-  const starts = contracts.map((contract) => new Date(contract.start_date));
-  const ends = contracts.map((contract) => new Date(contract.end_date));
-  const start = startOfMonth(new Date(Math.min(...starts.map((date) => date.getTime()))));
-  const end = endOfMonth(new Date(Math.max(...ends.map((date) => date.getTime()))));
+  const grouped = contracts.reduce((accumulator, contract) => {
+    const key = contract.billboards?.name || "Unassigned board";
+    accumulator[key] = accumulator[key] || [];
+    accumulator[key].push(contract);
+    return accumulator;
+  }, {});
+
+  Object.values(grouped).forEach((items) => {
+    items.sort((a, b) => new Date(a.start_date) - new Date(b.start_date));
+  });
+
+  const start = startOfWindow(contracts, options.windowStart);
+  const end = options.windowMonths
+    ? endOfMonth(addMonths(start, options.windowMonths - 1))
+    : endOfMonth(
+        new Date(
+          Math.max(...contracts.map((contract) => new Date(contract.end_date).getTime()))
+        )
+      );
 
   const months = [];
   let cursor = startOfMonth(start);
@@ -38,13 +62,6 @@ export function buildContractTimeline(contracts) {
     });
     cursor = addMonths(cursor, 1);
   }
-
-  const grouped = contracts.reduce((accumulator, contract) => {
-    const key = contract.billboards?.name || "Unassigned board";
-    accumulator[key] = accumulator[key] || [];
-    accumulator[key].push(contract);
-    return accumulator;
-  }, {});
 
   return {
     start,

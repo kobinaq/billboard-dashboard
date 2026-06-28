@@ -1,13 +1,22 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { Card } from "components/ui/Card";
+import { Button } from "components/ui/Button";
 import { EmptyState } from "components/ui/EmptyState";
 import { LoadingSpinner } from "components/ui/LoadingSpinner";
 import { StatusBadge } from "components/ui/StatusBadge";
+import { PageHeader } from "components/shared/PageHeader";
 import { useContracts } from "hooks/useContracts";
 import { buildContractTimeline } from "lib/contracts";
-import { diffInDays, formatDate } from "lib/utils";
+import { addMonths, diffInDays, formatDate, startOfMonth } from "lib/utils";
 
-const DAY_WIDTH = 14;
+const VIEW_OPTIONS = {
+  month: { label: "Month", months: 1, dayWidth: 24 },
+  sixMonths: { label: "6 months", months: 6, dayWidth: 8 },
+  annual: { label: "Annual", months: 12, dayWidth: 4 }
+};
+
 const MIN_BAR_WIDTH = 42;
 
 function monthLabel(date) {
@@ -17,25 +26,52 @@ function monthLabel(date) {
   }).format(date);
 }
 
+function periodLabel(date) {
+  return new Intl.DateTimeFormat("en-GB", {
+    month: "short",
+    year: "numeric"
+  }).format(date);
+}
+
 export default function ContractCalendar() {
+  const navigate = useNavigate();
   const { data, loading, error } = useContracts();
+  const [view, setView] = useState("sixMonths");
+  const [windowStart, setWindowStart] = useState(() => startOfMonth(new Date()));
+  const [hasAutoPositioned, setHasAutoPositioned] = useState(false);
+  const selectedView = VIEW_OPTIONS[view];
+
+  useEffect(() => {
+    if (hasAutoPositioned || !data?.length) {
+      return;
+    }
+
+    const earliestStart = new Date(
+      Math.min(...data.map((contract) => new Date(contract.start_date).getTime()))
+    );
+    setWindowStart(startOfMonth(earliestStart));
+    setHasAutoPositioned(true);
+  }, [data, hasAutoPositioned]);
 
   const timeline = useMemo(() => {
-    const baseTimeline = buildContractTimeline(data || []);
+    const baseTimeline = buildContractTimeline(data || [], {
+      windowStart,
+      windowMonths: selectedView.months
+    });
     if (!baseTimeline) {
       return null;
     }
 
     return {
       ...baseTimeline,
-      totalWidth: baseTimeline.totalDays * DAY_WIDTH,
+      totalWidth: baseTimeline.totalDays * selectedView.dayWidth,
       months: baseTimeline.months.map((month) => ({
         ...month,
         label: monthLabel(month.date),
-        width: month.days * DAY_WIDTH
+        width: month.days * selectedView.dayWidth
       }))
     };
-  }, [data]);
+  }, [data, selectedView, windowStart]);
 
   const monthMarkers = useMemo(() => {
     if (!timeline) {
@@ -62,26 +98,77 @@ export default function ContractCalendar() {
     });
   }, [timeline]);
 
-  if (loading) {
-    return <LoadingSpinner label="Loading contract timeline..." />;
-  }
+  const moveWindow = (direction) => {
+    setHasAutoPositioned(true);
+    setWindowStart((current) => addMonths(current, direction * selectedView.months));
+  };
 
-  if (error) {
-    return <EmptyState title="Could not load timeline" description={error} />;
-  }
+  const resetToToday = () => {
+    setHasAutoPositioned(true);
+    setWindowStart(startOfMonth(new Date()));
+  };
 
-  if (!timeline) {
-    return (
-      <EmptyState
-        title="No contracts yet"
-        description="Add contracts to see occupied periods by billboard."
-      />
-    );
-  }
+  const visibleRangeLabel = timeline ? `${periodLabel(timeline.start)} - ${periodLabel(timeline.end)}` : "";
 
   return (
     <div className="space-y-6">
+      <PageHeader title="Contract Timeline" />
+
       <Card className="overflow-hidden p-0">
+        <div className="space-y-4 border-b border-slate-200 p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex w-full gap-2 rounded-lg bg-slate-100 p-1 md:w-fit">
+              <Button className="flex-1 md:flex-none" variant="secondary" onClick={() => navigate("/contracts")}>
+                List
+              </Button>
+              <Button className="flex-1 md:flex-none" onClick={() => navigate("/contracts/calendar")}>
+                Timeline
+              </Button>
+            </div>
+
+            <Button onClick={() => navigate("/contracts/new")}>
+              <Plus className="h-4 w-4" />
+              Add contract
+            </Button>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex gap-2 rounded-lg bg-slate-100 p-1">
+              {Object.entries(VIEW_OPTIONS).map(([key, option]) => (
+                <Button
+                  key={key}
+                  variant={view === key ? "primary" : "secondary"}
+                  onClick={() => setView(key)}
+                >
+                  {option.label}
+                </Button>
+              ))}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <Button variant="secondary" onClick={() => moveWindow(-1)} aria-label="Previous period">
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <div className="min-w-52 text-center text-sm font-semibold text-slate-700">
+                {visibleRangeLabel}
+              </div>
+              <Button variant="secondary" onClick={() => moveWindow(1)} aria-label="Next period">
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              <Button variant="secondary" onClick={resetToToday}>
+                Today
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {loading ? (
+          <LoadingSpinner label="Loading contract timeline..." />
+        ) : error ? (
+          <EmptyState title="Could not load timeline" description={error} />
+        ) : !timeline ? (
+          <EmptyState title="No contracts yet" description="Add contracts to see occupied periods by billboard." />
+        ) : (
         <div className="overflow-x-auto">
           <div className="min-w-[960px]">
             <div className="sticky top-0 z-10 grid grid-cols-[240px_1fr] border-b border-slate-200 bg-white">
@@ -101,7 +188,14 @@ export default function ContractCalendar() {
               </div>
             </div>
 
-            {Object.entries(timeline.grouped).map(([boardName, contracts]) => (
+            {Object.entries(timeline.grouped).map(([boardName, contracts]) => {
+              const visibleContracts = contracts.filter((contract) => {
+                const startsBeforeWindowEnds = new Date(contract.start_date) <= timeline.end;
+                const endsAfterWindowStarts = new Date(contract.end_date) >= timeline.start;
+                return startsBeforeWindowEnds && endsAfterWindowStarts;
+              });
+
+              return (
               <div
                 key={boardName}
                 className="grid grid-cols-[240px_1fr] border-b border-slate-200 last:border-b-0"
@@ -116,15 +210,26 @@ export default function ContractCalendar() {
                 <div className="relative px-4 py-5">
                   <div
                     className="relative rounded-3xl bg-slate-50"
-                    style={{ width: timeline.totalWidth, minHeight: contracts.length * 78 }}
+                    style={{
+                      width: timeline.totalWidth,
+                      minHeight: Math.max(visibleContracts.length, 1) * 78
+                    }}
                   >
                     {monthMarkers}
 
-                    {contracts.map((contract, index) => {
-                      const offsetDays = diffInDays(timeline.start, contract.start_date);
-                      const spanDays = diffInDays(contract.start_date, contract.end_date) + 1;
-                      const left = offsetDays * DAY_WIDTH;
-                      const width = Math.max(spanDays * DAY_WIDTH, MIN_BAR_WIDTH);
+                    {visibleContracts.length === 0 ? (
+                      <div className="absolute left-4 top-6 text-sm font-medium text-slate-400">
+                        No occupied period in this window
+                      </div>
+                    ) : null}
+
+                    {visibleContracts.map((contract, index) => {
+                      const visibleStart = new Date(Math.max(new Date(contract.start_date), timeline.start));
+                      const visibleEnd = new Date(Math.min(new Date(contract.end_date), timeline.end));
+                      const offsetDays = diffInDays(timeline.start, visibleStart);
+                      const spanDays = diffInDays(visibleStart, visibleEnd) + 1;
+                      const left = offsetDays * selectedView.dayWidth;
+                      const width = Math.max(spanDays * selectedView.dayWidth, MIN_BAR_WIDTH);
 
                       return (
                         <div
@@ -158,9 +263,11 @@ export default function ContractCalendar() {
                   </div>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
+        )}
       </Card>
     </div>
   );

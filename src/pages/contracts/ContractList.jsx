@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { CalendarDays, Plus, Search } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import { Button } from "components/ui/Button";
 import { Card } from "components/ui/Card";
 import { EmptyState } from "components/ui/EmptyState";
@@ -45,14 +45,18 @@ export default function ContractList() {
   return (
     <div className="space-y-6">
       <SetupNotice />
-      <PageHeader
-        title="Contracts"
-        description="Track occupancy, renewals, and payment progress across every board."
-        secondaryAction={{ label: "Calendar", onClick: () => navigate("/contracts/calendar") }}
-        action={{ label: "New contract", onClick: () => navigate("/contracts/new") }}
-      />
+      <PageHeader title="Contracts" />
 
       <Card className="space-y-5">
+        <div className="flex w-full gap-2 rounded-lg bg-slate-100 p-1 md:w-fit">
+          <Button className="flex-1 md:flex-none" onClick={() => navigate("/contracts")}>
+            List
+          </Button>
+          <Button className="flex-1 md:flex-none" variant="secondary" onClick={() => navigate("/contracts/calendar")}>
+            Timeline
+          </Button>
+        </div>
+
         <div className="grid gap-4 md:grid-cols-[1fr_auto]">
           <div className="relative">
             <Search className="pointer-events-none absolute left-4 top-4 h-4 w-4 text-slate-400" />
@@ -64,10 +68,6 @@ export default function ContractList() {
             />
           </div>
           <div className="flex gap-3">
-            <Button variant="secondary" onClick={() => navigate("/contracts/calendar")}>
-              <CalendarDays className="h-4 w-4" />
-              Timeline
-            </Button>
             <Button onClick={() => navigate("/contracts/new")}>
               <Plus className="h-4 w-4" />
               Add contract

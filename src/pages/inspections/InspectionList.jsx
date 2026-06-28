@@ -36,11 +36,7 @@ export default function InspectionList() {
   return (
     <div className="space-y-6">
       <SetupNotice />
-      <PageHeader
-        title="Inspection Logs"
-        description="Field issues, conditions, and proof photos in one mobile-friendly workflow."
-        action={{ label: "Log inspection", onClick: () => navigate("/inspections/new") }}
-      />
+      <PageHeader title="Inspection Logs" />
 
       <Card className="space-y-5">
         <div className="flex flex-wrap items-center gap-4">

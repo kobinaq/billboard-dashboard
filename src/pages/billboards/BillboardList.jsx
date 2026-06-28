@@ -76,22 +76,7 @@ export default function BillboardList() {
   return (
     <div className="space-y-6">
       <SetupNotice />
-      <PageHeader
-        title="All Billboards"
-        description="Search inventory, track status, and jump into board details or map view."
-        secondaryAction={{
-          label: "Map view",
-          onClick: () => navigate("/billboards/map")
-        }}
-        action={
-          role === "admin" || role === "sales"
-            ? {
-                label: "Add billboard",
-                onClick: () => navigate("/billboards/new")
-              }
-            : null
-        }
-      />
+      <PageHeader title="All Billboards" />
 
       <Card className="space-y-5">
         <div className="grid gap-4 md:grid-cols-[1fr_auto]">

@@ -64,11 +64,13 @@ supabase functions deploy admin-user-deactivate
 5. Set the required function secrets in Supabase:
 
 ```bash
-supabase secrets set SUPABASE_URL=your_supabase_url
-supabase secrets set SUPABASE_ANON_KEY=your_supabase_anon_key
-supabase secrets set SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+supabase secrets set PROJECT_URL=your_supabase_url
+supabase secrets set ANON_KEY=your_supabase_anon_key
+supabase secrets set SERVICE_ROLE_KEY=your_service_role_key
 supabase secrets set SITE_URL=https://your-app-url
 ```
+
+The Edge Functions also accept `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` as fallback names for local compatibility.
 
 6. In Authentication, create the initial admin user manually.
 7. Update that user in `profiles` so `role = 'admin'`.
