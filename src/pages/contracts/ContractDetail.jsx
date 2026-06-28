@@ -107,6 +107,7 @@ export default function ContractDetail() {
       ["Contract #", contract.contract_number],
       ["Client", contract.clients?.company_name || "--"],
       ["Billboard", contract.billboards?.name || "--"],
+      ["Face", contract.billboard_faces?.label || "--"],
       ["Period", `${formatDate(contract.start_date)} - ${formatDate(contract.end_date)}`],
       ["Monthly rate", formatCurrency(contract.monthly_rate)],
       ["Total value", formatCurrency(contract.total_value)],
@@ -157,6 +158,7 @@ export default function ContractDetail() {
           </div>
           <p className="text-sm text-slate-500">
             {contract.clients?.company_name} - {contract.billboards?.name}
+            {contract.billboard_faces?.label ? ` - ${contract.billboard_faces.label}` : ""}
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
@@ -174,6 +176,7 @@ export default function ContractDetail() {
         <Card className="space-y-4">
           <SummaryRow label="Client" value={contract.clients?.company_name} />
           <SummaryRow label="Billboard" value={contract.billboards?.name} />
+          <SummaryRow label="Face" value={contract.billboard_faces?.label} />
           <SummaryRow label="Period" value={`${formatDate(contract.start_date)} - ${formatDate(contract.end_date)}`} />
           <SummaryRow label="Monthly rate" value={formatCurrency(contract.monthly_rate)} />
           <SummaryRow label="Total value" value={formatCurrency(contract.total_value)} />

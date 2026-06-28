@@ -11,6 +11,7 @@ async function listContracts() {
       *,
       clients(id, profile_id, company_name, contact_name, contact_email),
       billboards(name, code, region, status, address),
+      billboard_faces(id, label, facing_direction),
       payments(id, amount, payment_date)
     `
     )

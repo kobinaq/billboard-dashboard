@@ -2,9 +2,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import mapboxgl from "mapbox-gl";
 import { useForm } from "react-hook-form";
+import { useFieldArray } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import toast from "react-hot-toast";
+import { Button } from "components/ui/Button";
 import { Card } from "components/ui/Card";
 import { FileUpload } from "components/ui/FileUpload";
 import { FormActions } from "components/ui/FormActions";
@@ -45,8 +47,25 @@ const schema = z.object({
   design_price: optionalMoney,
   printing_price: optionalMoney,
   flighting_price: optionalMoney,
+  faces: z.array(
+    z.object({
+      id: z.string().optional(),
+      label: z.string().min(1, "Face label is required."),
+      facing_direction: z.string().optional(),
+      is_active: z.boolean().default(true)
+    })
+  ).min(1, "Add at least one bookable face."),
   notes: z.string().optional()
 });
+
+function defaultFaces(type = "traditional") {
+  return type === "digital"
+    ? [{ label: "Digital Screen", facing_direction: "", is_active: true }]
+    : [
+        { label: "Face A", facing_direction: "", is_active: true },
+        { label: "Face B", facing_direction: "", is_active: true }
+      ];
+}
 
 export default function BillboardForm() {
   const navigate = useNavigate();
@@ -54,7 +73,7 @@ export default function BillboardForm() {
   const [submitting, setSubmitting] = useState(false);
   const [coverFile, setCoverFile] = useState(null);
   const [coverPreview, setCoverPreview] = useState("");
-  const { data, saveBillboard, updateCoverImage } = useBillboards();
+  const { data, saveBillboard, updateCoverImage, saveBillboardFaces } = useBillboards();
   const current = useMemo(() => (data || []).find((item) => item.id === id), [data, id]);
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
@@ -64,6 +83,7 @@ export default function BillboardForm() {
     handleSubmit,
     formState: { errors },
     setValue,
+    control,
     watch
   } = useForm({
     resolver: zodResolver(schema),
@@ -88,18 +108,39 @@ export default function BillboardForm() {
       design_price: current?.design_price ?? "",
       printing_price: current?.printing_price ?? "",
       flighting_price: current?.flighting_price ?? "",
+      faces: current?.billboard_faces?.length
+        ? current.billboard_faces
+            .slice()
+            .sort((a, b) => a.label.localeCompare(b.label))
+            .map((face) => ({
+              id: face.id,
+              label: face.label,
+              facing_direction: face.facing_direction || "",
+              is_active: face.is_active !== false
+            }))
+        : defaultFaces(current?.type || "traditional"),
       notes: current?.notes || ""
     }
   });
 
   const latitude = watch("latitude");
   const longitude = watch("longitude");
+  const boardType = watch("type");
+  const { fields, append, remove, replace } = useFieldArray({ control, name: "faces" });
 
   useEffect(() => {
     if (current?.cover_image_url) {
       setCoverPreview(current.cover_image_url);
     }
   }, [current]);
+
+  useEffect(() => {
+    if (id || fields.length) {
+      return;
+    }
+
+    replace(defaultFaces(boardType || "traditional"));
+  }, [boardType, fields.length, id, replace]);
 
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current || !process.env.REACT_APP_MAPBOX_TOKEN) {
@@ -157,7 +198,9 @@ export default function BillboardForm() {
   async function onSubmit(values) {
     setSubmitting(true);
     try {
-      const billboard = await saveBillboard(values, id);
+      const { faces, ...billboardValues } = values;
+      const billboard = await saveBillboard(billboardValues, id);
+      await saveBillboardFaces(billboard.id, faces);
 
       if (coverFile) {
         const { publicUrl } = await uploadPublicFile(
@@ -213,6 +256,51 @@ export default function BillboardForm() {
           <div className="md:col-span-2">
             <Textarea label="Notes" {...register("notes")} />
           </div>
+        </Card>
+
+        <Card className="space-y-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h4 className="text-lg font-semibold">Bookable faces</h4>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => append({ label: "", facing_direction: "", is_active: true })}
+            >
+              Add face
+            </Button>
+          </div>
+          <div className="space-y-3">
+            {fields.map((field, index) => (
+              <div key={field.id} className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3 md:grid-cols-[1fr_1fr_auto]">
+                <Input
+                  label="Face label"
+                  error={errors.faces?.[index]?.label?.message}
+                  {...register(`faces.${index}.label`)}
+                />
+                <Input
+                  label="Face direction"
+                  error={errors.faces?.[index]?.facing_direction?.message}
+                  {...register(`faces.${index}.facing_direction`)}
+                />
+                <div className="flex items-end gap-3">
+                  <label className="flex h-[46px] items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 rounded border-slate-300"
+                      {...register(`faces.${index}.is_active`)}
+                    />
+                    Active
+                  </label>
+                  {fields.length > 1 ? (
+                    <Button type="button" variant="danger" onClick={() => remove(index)}>
+                      Remove
+                    </Button>
+                  ) : null}
+                </div>
+              </div>
+            ))}
+          </div>
+          {errors.faces?.message ? <p className="text-sm text-rose-600">{errors.faces.message}</p> : null}
         </Card>
 
         <Card className="space-y-5">

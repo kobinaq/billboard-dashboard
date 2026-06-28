@@ -145,11 +145,23 @@ create table if not exists public.clients (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists public.billboard_faces (
+  id uuid primary key default gen_random_uuid(),
+  billboard_id uuid not null references public.billboards(id) on delete cascade,
+  label text not null,
+  facing_direction text,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint billboard_faces_label_unique unique (billboard_id, label)
+);
+
 create table if not exists public.contracts (
   id uuid primary key default gen_random_uuid(),
   contract_number text not null unique,
   client_id uuid not null references public.clients(id) on delete cascade,
   billboard_id uuid not null references public.billboards(id) on delete cascade,
+  billboard_face_id uuid references public.billboard_faces(id) on delete restrict,
   start_date date not null,
   end_date date not null,
   monthly_rate numeric not null check (monthly_rate > 0),
@@ -165,6 +177,9 @@ create table if not exists public.contracts (
   updated_at timestamptz not null default now(),
   constraint contracts_dates_valid check (end_date >= start_date)
 );
+
+alter table public.contracts
+  add column if not exists billboard_face_id uuid references public.billboard_faces(id) on delete restrict;
 
 create table if not exists public.inspection_logs (
   id uuid primary key default gen_random_uuid(),
@@ -315,6 +330,36 @@ begin
 end;
 $$;
 
+create or replace function public.sync_contract_billboard_from_face()
+returns trigger
+language plpgsql
+as $$
+declare
+  face_billboard_id uuid;
+begin
+  if new.billboard_face_id is null then
+    raise exception 'Billboard face is required.';
+  end if;
+
+  select billboard_id
+  into face_billboard_id
+  from public.billboard_faces
+  where id = new.billboard_face_id
+    and is_active = true;
+
+  if face_billboard_id is null then
+    raise exception 'Selected billboard face is inactive or does not exist.';
+  end if;
+
+  if new.billboard_id is not null and new.billboard_id <> face_billboard_id then
+    raise exception 'Selected billboard face does not belong to the selected billboard.';
+  end if;
+
+  new.billboard_id := face_billboard_id;
+  return new;
+end;
+$$;
+
 create or replace function public.prevent_contract_overlap()
 returns trigger
 language plpgsql
@@ -323,12 +368,12 @@ begin
   if exists (
     select 1
     from public.contracts c
-    where c.billboard_id = new.billboard_id
+    where c.billboard_face_id = new.billboard_face_id
       and c.id <> coalesce(new.id, gen_random_uuid())
       and c.status in ('draft', 'active')
       and daterange(c.start_date, c.end_date, '[]') && daterange(new.start_date, new.end_date, '[]')
   ) then
-    raise exception 'Billboard is already booked for the selected date range.';
+    raise exception 'Billboard face is already booked for the selected date range.';
   end if;
 
   return new;
@@ -385,13 +430,26 @@ begin
     select
       b_inner.id,
       case
+        when b_inner.status in ('maintenance', 'retired') then b_inner.status
         when exists (
           select 1
-          from public.contracts c
-          where c.billboard_id = b_inner.id
-            and c.status = 'active'
-            and c.start_date <= current_date
-            and c.end_date >= current_date
+          from public.billboard_faces bf
+          where bf.billboard_id = b_inner.id
+            and bf.is_active = true
+        )
+        and not exists (
+          select 1
+          from public.billboard_faces bf
+          where bf.billboard_id = b_inner.id
+            and bf.is_active = true
+            and not exists (
+              select 1
+              from public.contracts c
+              where c.billboard_face_id = bf.id
+                and c.status = 'active'
+                and c.start_date <= current_date
+                and c.end_date >= current_date
+            )
         ) then 'occupied'
         else case when b_inner.status = 'occupied' then 'available' else b_inner.status end
       end as next_status
@@ -451,9 +509,12 @@ begin
 end;
 $$;
 
-create or replace function public.public_billboard_availability()
+drop function if exists public.public_billboard_availability();
+create function public.public_billboard_availability()
 returns table (
   billboard_id uuid,
+  billboard_face_id uuid,
+  face_label text,
   name text,
   code text,
   type text,
@@ -465,6 +526,7 @@ returns table (
   address text,
   region text,
   facing_direction text,
+  face_facing_direction text,
   traffic_count text,
   illuminated boolean,
   cover_image_url text,
@@ -486,15 +548,17 @@ as $$
   with visible_contracts as (
     select
       c.billboard_id,
+      c.billboard_face_id,
       c.start_date,
       c.end_date
     from public.contracts c
     where c.status in ('draft', 'active')
       and c.end_date >= current_date
+      and c.billboard_face_id is not null
   ),
   grouped_contracts as (
     select
-      vc.billboard_id,
+      vc.billboard_face_id,
       jsonb_agg(
         jsonb_build_object(
           'start_date', vc.start_date,
@@ -504,10 +568,12 @@ as $$
       ) as occupied_ranges,
       max(vc.end_date) as last_occupied_date
     from visible_contracts vc
-    group by vc.billboard_id
+    group by vc.billboard_face_id
   )
   select
     b.id as billboard_id,
+    bf.id as billboard_face_id,
+    bf.label as face_label,
     b.name,
     b.code,
     b.type,
@@ -519,6 +585,7 @@ as $$
     b.address,
     b.region,
     b.facing_direction,
+    bf.facing_direction as face_facing_direction,
     b.traffic_count,
     b.illuminated,
     b.cover_image_url,
@@ -535,9 +602,10 @@ as $$
       else gc.last_occupied_date + 1
     end as next_available_date
   from public.billboards b
-  left join grouped_contracts gc on gc.billboard_id = b.id
+  join public.billboard_faces bf on bf.billboard_id = b.id and bf.is_active = true
+  left join grouped_contracts gc on gc.billboard_face_id = bf.id
   where b.status <> 'retired'
-  order by b.region, b.name;
+  order by b.region, b.name, bf.label;
 $$;
 
 drop trigger if exists profiles_set_updated_at on public.profiles;
@@ -555,6 +623,11 @@ create trigger clients_set_updated_at
 before update on public.clients
 for each row execute function public.set_current_timestamp();
 
+drop trigger if exists billboard_faces_set_updated_at on public.billboard_faces;
+create trigger billboard_faces_set_updated_at
+before update on public.billboard_faces
+for each row execute function public.set_current_timestamp();
+
 drop trigger if exists contracts_set_updated_at on public.contracts;
 create trigger contracts_set_updated_at
 before update on public.contracts
@@ -569,6 +642,11 @@ drop trigger if exists contracts_generate_number on public.contracts;
 create trigger contracts_generate_number
 before insert on public.contracts
 for each row execute function public.generate_contract_number();
+
+drop trigger if exists contracts_assign_billboard_from_face on public.contracts;
+create trigger contracts_assign_billboard_from_face
+before insert or update of billboard_face_id, billboard_id on public.contracts
+for each row execute function public.sync_contract_billboard_from_face();
 
 drop trigger if exists contracts_prevent_overlap on public.contracts;
 create trigger contracts_prevent_overlap
@@ -590,10 +668,62 @@ create trigger payments_rollup_contract_totals
 after insert or update or delete on public.payments
 for each row execute function public.rollup_contract_payments();
 
+insert into public.billboard_faces (
+  billboard_id,
+  label,
+  facing_direction,
+  is_active
+)
+select
+  b.id,
+  case when b.type = 'digital' then 'Digital Screen' else 'Face A' end,
+  b.facing_direction,
+  true
+from public.billboards b
+where not exists (
+  select 1
+  from public.billboard_faces bf
+  where bf.billboard_id = b.id
+)
+on conflict (billboard_id, label) do nothing;
+
+update public.contracts c
+set billboard_face_id = bf.id
+from public.billboard_faces bf
+where c.billboard_id = bf.billboard_id
+  and c.billboard_face_id is null
+  and bf.id = (
+    select bf_inner.id
+    from public.billboard_faces bf_inner
+    where bf_inner.billboard_id = c.billboard_id
+      and bf_inner.is_active = true
+    order by bf_inner.created_at, bf_inner.label
+    limit 1
+  );
+
+do $$
+begin
+  if exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'contracts'
+      and column_name = 'billboard_face_id'
+      and is_nullable = 'YES'
+  ) and not exists (
+    select 1
+    from public.contracts
+    where billboard_face_id is null
+  ) then
+    alter table public.contracts alter column billboard_face_id set not null;
+  end if;
+end $$;
+
 alter table public.profiles enable row level security;
 alter table public.regions enable row level security;
 alter table public.billboard_types enable row level security;
 alter table public.billboards enable row level security;
+alter table public.billboard_faces enable row level security;
 alter table public.clients enable row level security;
 alter table public.contracts enable row level security;
 alter table public.inspection_logs enable row level security;
@@ -684,6 +814,33 @@ using (
 drop policy if exists "billboards_sales_admin_manage" on public.billboards;
 create policy "billboards_sales_admin_manage"
 on public.billboards
+for all
+to authenticated
+using (public.is_sales_or_admin())
+with check (public.is_sales_or_admin());
+
+drop policy if exists "billboard_faces_read_access" on public.billboard_faces;
+create policy "billboard_faces_read_access"
+on public.billboard_faces
+for select
+to authenticated
+using (
+  public.is_active_user()
+  and (
+    public.current_role() in ('admin', 'sales', 'inspector')
+    or exists (
+      select 1
+      from public.contracts c
+      join public.clients cl on cl.id = c.client_id
+      where c.billboard_face_id = billboard_faces.id
+        and cl.profile_id = auth.uid()
+    )
+  )
+);
+
+drop policy if exists "billboard_faces_sales_admin_manage" on public.billboard_faces;
+create policy "billboard_faces_sales_admin_manage"
+on public.billboard_faces
 for all
 to authenticated
 using (public.is_sales_or_admin())

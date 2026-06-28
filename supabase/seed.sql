@@ -181,6 +181,33 @@ values
     'https://images.unsplash.com/photo-1514565131-fce0801e5785?auto=format&fit=crop&w=1200&q=80'
   );
 
+insert into public.billboard_faces (
+  billboard_id,
+  label,
+  facing_direction,
+  is_active
+)
+select
+  billboards.id,
+  seed.label,
+  seed.facing_direction,
+  true
+from (
+  values
+    ('ACC-001', 'Face A', 'East'),
+    ('ACC-001', 'Face B', 'West'),
+    ('KUM-014', 'Digital Screen', 'North'),
+    ('TEM-009', 'Face A', 'South'),
+    ('TEM-009', 'Face B', 'North'),
+    ('TAK-006', 'Face A', 'West'),
+    ('TAK-006', 'Face B', 'East'),
+    ('HO-003', 'Digital Screen', 'East')
+) as seed(board_code, label, facing_direction)
+join public.billboards billboards on billboards.code = seed.board_code and billboards.notes like '[sample]%'
+on conflict (billboard_id, label) do update
+set facing_direction = excluded.facing_direction,
+    is_active = true;
+
 insert into public.clients (
   company_name,
   contact_name,
@@ -223,6 +250,7 @@ insert into public.contracts (
   contract_number,
   client_id,
   billboard_id,
+  billboard_face_id,
   start_date,
   end_date,
   monthly_rate,
@@ -236,6 +264,7 @@ select
   seed.contract_number,
   clients.id,
   billboards.id,
+  faces.id,
   seed.start_date,
   seed.end_date,
   seed.monthly_rate,
@@ -246,13 +275,15 @@ select
   seed.notes
 from (
   values
-    ('TKA-2026-1001', 'BlueWave Telecom', 'ACC-001', date '2026-01-01', date '2026-06-30', 18000, 'partial', 54000, 'active', '[sample] H1 city visibility burst'),
-    ('TKA-2026-1002', 'Sunrise Bank', 'KUM-014', date '2026-03-01', date '2026-12-31', 25000, 'partial', 100000, 'active', '[sample] Full-year regional digital campaign'),
-    ('TKA-2026-1003', 'Fresh Basket Foods', 'HO-003', date '2026-05-01', date '2026-08-31', 12000, 'unpaid', 0, 'active', '[sample] Mid-year regional promotion'),
-    ('TKA-2025-1099', 'BlueWave Telecom', 'TEM-009', date '2025-09-01', date '2025-12-31', 9000, 'paid', 36000, 'expired', '[sample] Previous seasonal placement')
-) as seed(contract_number, company_name, board_code, start_date, end_date, monthly_rate, payment_status, amount_paid, status, notes)
+    ('TKA-2026-1001', 'BlueWave Telecom', 'ACC-001', 'Face A', date '2026-01-01', date '2026-06-30', 18000, 'partial', 54000, 'active', '[sample] H1 city visibility burst'),
+    ('TKA-2026-1004', 'Sunrise Bank', 'ACC-001', 'Face B', date '2026-02-01', date '2026-05-31', 18000, 'partial', 36000, 'active', '[sample] Same board, opposite face placement'),
+    ('TKA-2026-1002', 'Sunrise Bank', 'KUM-014', 'Digital Screen', date '2026-03-01', date '2026-12-31', 25000, 'partial', 100000, 'active', '[sample] Full-year regional digital campaign'),
+    ('TKA-2026-1003', 'Fresh Basket Foods', 'HO-003', 'Digital Screen', date '2026-05-01', date '2026-08-31', 12000, 'unpaid', 0, 'active', '[sample] Mid-year regional promotion'),
+    ('TKA-2025-1099', 'BlueWave Telecom', 'TEM-009', 'Face A', date '2025-09-01', date '2025-12-31', 9000, 'paid', 36000, 'expired', '[sample] Previous seasonal placement')
+) as seed(contract_number, company_name, board_code, face_label, start_date, end_date, monthly_rate, payment_status, amount_paid, status, notes)
 join public.clients clients on clients.company_name = seed.company_name and clients.notes like '[sample]%'
-join public.billboards billboards on billboards.code = seed.board_code and billboards.notes like '[sample]%';
+join public.billboards billboards on billboards.code = seed.board_code and billboards.notes like '[sample]%'
+join public.billboard_faces faces on faces.billboard_id = billboards.id and faces.label = seed.face_label;
 
 insert into public.payments (
   contract_id,
@@ -274,6 +305,8 @@ from (
     ('TKA-2026-1001', 18000, date '2026-01-05', 'bank_transfer', 'BW-001', '[sample] January payment'),
     ('TKA-2026-1001', 18000, date '2026-02-05', 'bank_transfer', 'BW-002', '[sample] February payment'),
     ('TKA-2026-1001', 18000, date '2026-03-05', 'mobile_money', 'BW-003', '[sample] March payment'),
+    ('TKA-2026-1004', 18000, date '2026-02-10', 'bank_transfer', 'SB-ACC-001', '[sample] Opposite face February payment'),
+    ('TKA-2026-1004', 18000, date '2026-03-10', 'bank_transfer', 'SB-ACC-002', '[sample] Opposite face March payment'),
     ('TKA-2026-1002', 25000, date '2026-03-03', 'bank_transfer', 'SB-001', '[sample] March payment'),
     ('TKA-2026-1002', 25000, date '2026-04-03', 'bank_transfer', 'SB-002', '[sample] April payment'),
     ('TKA-2026-1002', 25000, date '2026-05-03', 'cheque', 'SB-003', '[sample] May payment'),

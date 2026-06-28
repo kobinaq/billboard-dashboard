@@ -25,6 +25,7 @@ export default function ContractList() {
         contract.contract_number,
         contract.clients?.company_name,
         contract.billboards?.name,
+        contract.billboard_faces?.label,
         contract.status,
         contract.payment_status
       ]
@@ -94,6 +95,7 @@ export default function ContractList() {
               },
               { key: "client", header: "Client", render: (row) => row.clients?.company_name || "--" },
               { key: "billboard", header: "Billboard", render: (row) => row.billboards?.name || "--" },
+              { key: "face", header: "Face", render: (row) => row.billboard_faces?.label || "--" },
               { key: "start_date", header: "Start", render: (row) => formatDate(row.start_date) },
               { key: "end_date", header: "End", render: (row) => formatDate(row.end_date) },
               { key: "monthly_rate", header: "Monthly rate", render: (row) => formatCurrency(row.monthly_rate) },

@@ -8,7 +8,7 @@ async function listPayments() {
     .select(
       `
       *,
-      contracts(contract_number, clients(company_name), billboards(name))
+      contracts(contract_number, clients(company_name), billboards(name), billboard_faces(label))
     `
     )
     .order("payment_date", { ascending: false });

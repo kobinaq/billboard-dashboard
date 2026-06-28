@@ -60,6 +60,7 @@ export default function PaymentList() {
               { key: "payment_date", header: "Date", render: (row) => formatDate(row.payment_date) },
               { key: "client", header: "Client", render: (row) => row.contracts?.clients?.company_name || "--" },
               { key: "billboard", header: "Billboard", render: (row) => row.contracts?.billboards?.name || "--" },
+              { key: "face", header: "Face", render: (row) => row.contracts?.billboard_faces?.label || "--" },
               { key: "contract", header: "Contract #", render: (row) => row.contracts?.contract_number || "--" },
               { key: "amount", header: "Amount", render: (row) => formatCurrency(row.amount) },
               { key: "payment_method", header: "Method" },

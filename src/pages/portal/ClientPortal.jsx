@@ -57,6 +57,7 @@ export default function ClientPortal() {
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <p className="font-semibold text-slate-900">{contract.billboards?.name || "--"}</p>
+                    <p className="text-sm font-semibold text-brand-700">{contract.billboard_faces?.label || "--"}</p>
                     <p className="text-sm text-slate-500">{contract.billboards?.address || "--"}</p>
                   </div>
                   <StatusBadge value={contract.payment_status} />

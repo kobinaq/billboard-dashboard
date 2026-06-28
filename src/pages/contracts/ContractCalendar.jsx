@@ -173,7 +173,7 @@ export default function ContractCalendar() {
           <div className="min-w-[960px]">
             <div className="sticky top-0 z-10 grid grid-cols-[240px_1fr] border-b border-slate-200 bg-white">
               <div className="border-r border-slate-200 px-5 py-4">
-                <p className="text-sm font-semibold text-slate-900">Billboards</p>
+                <p className="text-sm font-semibold text-slate-900">Billboard faces</p>
               </div>
               <div className="flex bg-slate-50">
                 {timeline.months.map((month) => (

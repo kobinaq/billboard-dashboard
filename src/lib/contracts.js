@@ -29,7 +29,9 @@ export function buildContractTimeline(contracts, options = {}) {
   }
 
   const grouped = contracts.reduce((accumulator, contract) => {
-    const key = contract.billboards?.name || "Unassigned board";
+    const boardName = contract.billboards?.name || "Unassigned board";
+    const faceLabel = contract.billboard_faces?.label;
+    const key = faceLabel ? `${boardName} - ${faceLabel}` : boardName;
     accumulator[key] = accumulator[key] || [];
     accumulator[key].push(contract);
     return accumulator;

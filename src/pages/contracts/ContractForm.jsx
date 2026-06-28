@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -14,12 +14,13 @@ import { useBillboards } from "hooks/useBillboards";
 import { useClients } from "hooks/useClients";
 import { useContracts } from "hooks/useContracts";
 import { CONTRACT_STATUSES, PAYMENT_STATUSES } from "lib/constants";
-import { getErrorMessage } from "lib/utils";
+import { formatCurrency, getErrorMessage } from "lib/utils";
 
 const schema = z
   .object({
     client_id: z.string().uuid(),
     billboard_id: z.string().uuid(),
+    billboard_face_id: z.string().uuid(),
     start_date: z.string().min(1),
     end_date: z.string().min(1),
     monthly_rate: z.coerce.number().positive(),
@@ -46,12 +47,14 @@ export default function ContractForm() {
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors }
   } = useForm({
     resolver: zodResolver(schema),
     values: {
       client_id: current?.client_id || searchParams.get("client") || "",
       billboard_id: current?.billboard_id || "",
+      billboard_face_id: current?.billboard_face_id || "",
       start_date: current?.start_date || "",
       end_date: current?.end_date || "",
       monthly_rate: current?.monthly_rate || "",
@@ -64,11 +67,21 @@ export default function ContractForm() {
 
   const selectedStart = watch("start_date");
   const selectedEnd = watch("end_date");
+  const selectedFaceId = watch("billboard_face_id");
+  const selectedBillboardId = watch("billboard_id");
+  const selectedBillboard = useMemo(
+    () => (billboards || []).find((billboard) => billboard.id === selectedBillboardId),
+    [billboards, selectedBillboardId]
+  );
 
-  const availableBillboards = useMemo(() => {
-    return (billboards || []).filter((billboard) => {
+  const availableFaces = useMemo(() => {
+    return (selectedBillboard?.billboard_faces || []).filter((face) => {
+      if (face.is_active === false && face.id !== current?.billboard_face_id) {
+        return false;
+      }
+
       const overlapping = (contracts || []).some((contract) => {
-        if (contract.id === id || contract.billboard_id !== billboard.id) {
+        if (contract.id === id || contract.billboard_face_id !== face.id) {
           return false;
         }
         if (!["draft", "active"].includes(contract.status)) {
@@ -83,7 +96,17 @@ export default function ContractForm() {
 
       return !overlapping;
     });
-  }, [billboards, contracts, id, selectedEnd, selectedStart]);
+  }, [contracts, current?.billboard_face_id, id, selectedBillboard?.billboard_faces, selectedEnd, selectedStart]);
+
+  useEffect(() => {
+    if (!selectedFaceId) {
+      return;
+    }
+
+    if (!availableFaces.some((face) => face.id === selectedFaceId)) {
+      setValue("billboard_face_id", "");
+    }
+  }, [availableFaces, selectedFaceId, setValue]);
 
   async function onSubmit(values) {
     setSubmitting(true);
@@ -117,12 +140,21 @@ export default function ContractForm() {
           />
           <Select
             label="Billboard"
-            options={availableBillboards.map((billboard) => ({
+            options={(billboards || []).map((billboard) => ({
               value: billboard.id,
               label: `${billboard.code} • ${billboard.name}`
             }))}
             error={errors.billboard_id?.message}
             {...register("billboard_id")}
+          />
+          <Select
+            label="Face"
+            options={availableFaces.map((face) => ({
+              value: face.id,
+              label: `${face.label}${face.facing_direction ? ` - ${face.facing_direction}` : ""}`
+            }))}
+            error={errors.billboard_face_id?.message}
+            {...register("billboard_face_id")}
           />
           <Input label="Start date" type="date" error={errors.start_date?.message} {...register("start_date")} />
           <Input label="End date" type="date" error={errors.end_date?.message} {...register("end_date")} />
@@ -139,14 +171,36 @@ export default function ContractForm() {
             <Textarea label="Notes" {...register("notes")} />
           </div>
         </Card>
+        {selectedBillboard ? (
+          <Card>
+            <h4 className="text-lg font-semibold">Board rate guidance</h4>
+            <div className="mt-4 grid gap-3 text-sm md:grid-cols-4">
+              <Rate label="1-2 months" value={selectedBillboard.rate_1_2_months} />
+              <Rate label="3 months" value={selectedBillboard.rate_3_months} />
+              <Rate label="6 months" value={selectedBillboard.rate_6_months} />
+              <Rate label="12+ months" value={selectedBillboard.rate_12_plus_months} />
+            </div>
+          </Card>
+        ) : null}
         <Card>
           <h4 className="text-lg font-semibold">Availability guidance</h4>
           <p className="mt-3 text-sm text-slate-500">
-            Billboard options update based on the selected date range to avoid overlapping active or draft contracts. The database trigger in `supabase/schema.sql` still performs the final server-side booking check.
+            Face options update based on the selected date range to avoid overlapping active or draft contracts on the same face. The database trigger in `supabase/schema.sql` still performs the final server-side booking check.
           </p>
         </Card>
         <FormActions submitting={submitting} onCancel={() => navigate("/contracts")} />
       </form>
+    </div>
+  );
+}
+
+function Rate({ label, value }) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+      <p className="text-xs uppercase tracking-[0.18em] text-slate-500">{label}</p>
+      <p className="mt-2 font-semibold text-slate-900">
+        {value === null || value === undefined ? "--" : formatCurrency(value)}
+      </p>
     </div>
   );
 }

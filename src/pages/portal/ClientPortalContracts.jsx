@@ -22,6 +22,7 @@ export default function ClientPortalContracts() {
         columns={[
           { key: "contract_number", header: "Contract #" },
           { key: "billboard", header: "Billboard", render: (row) => row.billboards?.name || "--" },
+          { key: "face", header: "Face", render: (row) => row.billboard_faces?.label || "--" },
           { key: "start_date", header: "Start", render: (row) => formatDate(row.start_date) },
           { key: "end_date", header: "End", render: (row) => formatDate(row.end_date) },
           { key: "total_value", header: "Total value", render: (row) => formatCurrency(row.total_value) },

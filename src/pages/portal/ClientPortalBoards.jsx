@@ -19,6 +19,7 @@ export default function ClientPortalBoards() {
       {myContracts.map((contract) => (
         <Card key={contract.id} className="space-y-3">
           <h3 className="text-xl font-semibold">{contract.billboards?.name || "--"}</h3>
+          <p className="text-sm font-semibold text-brand-700">{contract.billboard_faces?.label || "--"}</p>
           <p className="text-sm text-slate-500">{contract.billboards?.address || "--"}</p>
           <p className="text-sm text-slate-500">
             {formatDate(contract.start_date)} - {formatDate(contract.end_date)}

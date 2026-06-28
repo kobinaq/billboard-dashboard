@@ -39,6 +39,7 @@ export default function BillboardDetail() {
       header: "Client",
       render: (row) => row.clients?.company_name || "--"
     },
+    { key: "face", header: "Face", render: (row) => row.billboard_faces?.label || "--" },
     { key: "status", header: "Status", render: (row) => <StatusBadge value={row.status} /> },
     { key: "start_date", header: "Start", render: (row) => formatDate(row.start_date) },
     { key: "end_date", header: "End", render: (row) => formatDate(row.end_date) }
@@ -100,6 +101,18 @@ export default function BillboardDetail() {
             />
             <Metric label="Illuminated" value={billboard.illuminated ? "Yes" : "No"} />
             <Metric label="Coordinates" value={`${billboard.latitude}, ${billboard.longitude}`} />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-slate-800">Bookable faces</p>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              {(billboard.billboard_faces || []).map((face) => (
+                <Metric
+                  key={face.id}
+                  label={face.label}
+                  value={`${face.is_active === false ? "Inactive" : "Active"}${face.facing_direction ? ` - ${face.facing_direction}` : ""}`}
+                />
+              ))}
+            </div>
           </div>
           <div>
             <p className="text-sm font-semibold text-slate-800">Public rate card</p>

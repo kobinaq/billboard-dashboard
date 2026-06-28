@@ -74,4 +74,25 @@ describe("buildContractTimeline", () => {
     expect(timeline.months).toHaveLength(4);
     expect(Object.keys(timeline.grouped)).toEqual(["Board A", "Board B"]);
   });
+
+  it("groups contracts by billboard face when a face label is present", () => {
+    const timeline = buildContractTimeline([
+      {
+        id: "contract-1",
+        start_date: "2026-01-01",
+        end_date: "2026-03-31",
+        billboards: { name: "Board A" },
+        billboard_faces: { label: "Face A" }
+      },
+      {
+        id: "contract-2",
+        start_date: "2026-01-01",
+        end_date: "2026-03-31",
+        billboards: { name: "Board A" },
+        billboard_faces: { label: "Face B" }
+      }
+    ]);
+
+    expect(Object.keys(timeline.grouped)).toEqual(["Board A - Face A", "Board A - Face B"]);
+  });
 });

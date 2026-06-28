@@ -9,12 +9,15 @@ async function listBillboards() {
     .select(
       `
       *,
+      billboard_faces(id, label, facing_direction, is_active),
       contracts(
         id,
         client_id,
+        billboard_face_id,
         status,
         start_date,
         end_date,
+        billboard_faces(label),
         clients(company_name)
       ),
       inspection_logs(id, inspected_at, overall_condition)
@@ -58,5 +61,49 @@ export function useBillboards() {
     return data;
   }, []);
 
-  return { ...resource, saveBillboard, updateCoverImage };
+  const saveBillboardFaces = useCallback(async (billboardId, faces = []) => {
+    const client = requireSupabase();
+    const keptIds = faces.map((face) => face.id).filter(Boolean);
+
+    if (keptIds.length) {
+      const { error: deactivateError } = await client
+        .from("billboard_faces")
+        .update({ is_active: false })
+        .eq("billboard_id", billboardId)
+        .not("id", "in", `(${keptIds.join(",")})`);
+
+      if (deactivateError) {
+        throw deactivateError;
+      }
+    } else {
+      const { error: deactivateError } = await client
+        .from("billboard_faces")
+        .update({ is_active: false })
+        .eq("billboard_id", billboardId);
+
+      if (deactivateError) {
+        throw deactivateError;
+      }
+    }
+
+    for (const face of faces) {
+      const values = {
+        billboard_id: billboardId,
+        label: face.label,
+        facing_direction: face.facing_direction || null,
+        is_active: face.is_active !== false
+      };
+
+      const query = face.id
+        ? client.from("billboard_faces").update(values).eq("id", face.id)
+        : client.from("billboard_faces").insert(values);
+
+      const { error } = await query;
+      if (error) {
+        throw error;
+      }
+    }
+  }, []);
+
+  return { ...resource, saveBillboard, updateCoverImage, saveBillboardFaces };
 }
