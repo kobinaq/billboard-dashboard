@@ -361,28 +361,44 @@ security definer
 set search_path = public
 as $$
 begin
-  update public.contracts
-  set status = case
-    when status = 'cancelled' then status
-    when end_date < current_date then 'expired'
-    when start_date <= current_date and end_date >= current_date then 'active'
-    else status
-  end,
-  updated_at = now();
+  update public.contracts c
+  set status = computed.next_status,
+    updated_at = now()
+  from (
+    select
+      id,
+      case
+        when status = 'cancelled' then status
+        when end_date < current_date then 'expired'
+        when start_date <= current_date and end_date >= current_date then 'active'
+        else status
+      end as next_status
+    from public.contracts
+  ) computed
+  where c.id = computed.id
+    and c.status is distinct from computed.next_status;
 
   update public.billboards b
-  set status = case
-    when exists (
-      select 1
-      from public.contracts c
-      where c.billboard_id = b.id
-        and c.status = 'active'
-        and c.start_date <= current_date
-        and c.end_date >= current_date
-    ) then 'occupied'
-    else case when b.status = 'occupied' then 'available' else b.status end
-  end,
-  updated_at = now();
+  set status = computed.next_status,
+    updated_at = now()
+  from (
+    select
+      b_inner.id,
+      case
+        when exists (
+          select 1
+          from public.contracts c
+          where c.billboard_id = b_inner.id
+            and c.status = 'active'
+            and c.start_date <= current_date
+            and c.end_date >= current_date
+        ) then 'occupied'
+        else case when b_inner.status = 'occupied' then 'available' else b_inner.status end
+      end as next_status
+    from public.billboards b_inner
+  ) computed
+  where b.id = computed.id
+    and b.status is distinct from computed.next_status;
 end;
 $$;
 
@@ -391,8 +407,12 @@ returns trigger
 language plpgsql
 as $$
 begin
+  if pg_trigger_depth() > 1 then
+    return coalesce(new, old);
+  end if;
+
   perform public.sync_contract_statuses();
-  return new;
+  return coalesce(new, old);
 end;
 $$;
 
