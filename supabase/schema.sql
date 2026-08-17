@@ -146,6 +146,10 @@ create table if not exists public.clients (
   updated_at timestamptz not null default now()
 );
 
+create unique index if not exists clients_profile_id_unique
+on public.clients (profile_id)
+where profile_id is not null;
+
 create table if not exists public.billboard_faces (
   id uuid primary key default gen_random_uuid(),
   billboard_id uuid not null references public.billboards(id) on delete cascade,

@@ -77,6 +77,31 @@ async function ensureClientLink(serviceClient, payload, profileId: string) {
     return data.id;
   }
 
+  const { data: linkedClient, error: linkedError } = await serviceClient
+    .from("clients")
+    .select("id")
+    .eq("profile_id", profileId)
+    .maybeSingle();
+
+  if (linkedError) {
+    throw linkedError;
+  }
+
+  if (linkedClient) {
+    const { data, error } = await serviceClient
+      .from("clients")
+      .update(clientValues)
+      .eq("id", linkedClient.id)
+      .select("id")
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return data.id;
+  }
+
   const { data, error } = await serviceClient
     .from("clients")
     .insert(clientValues)
@@ -119,7 +144,6 @@ Deno.serve(async (request) => {
         {
           data: {
             full_name: payload.fullName,
-            role: payload.role,
             company_name: normalizeString(payload.companyName)
           },
           redirectTo
@@ -143,7 +167,6 @@ Deno.serve(async (request) => {
       email: payload.email,
       user_metadata: {
         full_name: payload.fullName,
-        role: payload.role,
         company_name: normalizeString(payload.companyName)
       },
       app_metadata: {
@@ -155,18 +178,23 @@ Deno.serve(async (request) => {
       throw adminUpdate.error;
     }
 
+    const profilePatch = {
+      full_name: payload.fullName,
+      email: payload.email,
+      phone: normalizeString(payload.phone),
+      role: payload.role,
+      company_name: payload.role === "client" ? normalizeString(payload.companyName) : null
+    };
+
+    if (invited || payload.mode === "create" || payload.reactivate) {
+      profilePatch.is_active = true;
+      profilePatch.deactivated_at = null;
+      profilePatch.deactivation_reason = null;
+    }
+
     const { data: updatedProfile, error: profileError } = await auth.serviceClient
       .from("profiles")
-      .update({
-        full_name: payload.fullName,
-        email: payload.email,
-        phone: normalizeString(payload.phone),
-        role: payload.role,
-        company_name: payload.role === "client" ? normalizeString(payload.companyName) : null,
-        is_active: true,
-        deactivated_at: null,
-        deactivation_reason: null
-      })
+      .update(profilePatch)
       .eq("id", authUserId)
       .select("*")
       .single();

@@ -12,7 +12,6 @@ It also includes a public `/availability` page where prospects can view billboar
 - Supabase Auth, Postgres, Storage, and RLS
 - React Hook Form + Zod
 - Mapbox GL JS
-- Recharts
 - react-hot-toast
 
 ## Project Structure

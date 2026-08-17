@@ -24,6 +24,10 @@ describe("schema invariants", () => {
     expect(schema).toMatch(/when status in \('cancelled', 'draft'\) then status/);
   });
 
+  it("keeps one client login from linking two CRM rows", () => {
+    expect(schema).toMatch(/clients_profile_id_unique/);
+  });
+
   it("stores inspection photos in a private bucket", () => {
     expect(schema).toMatch(/\('inspection-photos', 'inspection-photos', false\)/);
   });
