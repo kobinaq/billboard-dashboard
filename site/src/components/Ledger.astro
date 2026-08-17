@@ -1,0 +1,64 @@
+---
+const rows = [
+  {
+    n: "01",
+    name: "Stop selling a sold face",
+    line: "A face with a draft or active contract cannot be switched off or double-booked.",
+    detail:
+      "Every face carries its own dates. Once a draft or active contract covers those dates, the next booking on that face fails in the app and in the database. No two agents can both promise the same six months."
+  },
+  {
+    n: "02",
+    name: "Payments that chase themselves",
+    line: "Payment status comes from recorded payments. Nobody edits it by hand.",
+    detail:
+      "unpaid, partial, or paid follows the sum on the contract. When a client still owes, it shows on your dashboard before you sign the next campaign."
+  },
+  {
+    n: "03",
+    name: "Proof before the client calls",
+    line: "Inspections carry photos from the field, kept in a private bucket.",
+    detail:
+      "Vinyl theft and storm damage are not arguments over the phone. Staff upload from the site. You and the client both see the same photo and the same note."
+  },
+  {
+    n: "04",
+    name: "Renewals do not live in memory",
+    line: "Contracts within 30 days of the end sit on the dashboard.",
+    detail:
+      "Industry retention is about 70 percent. The 30 percent you replace every year usually starts with a date nobody was watching."
+  },
+  {
+    n: "05",
+    name: "Sell while you sleep",
+    line: "The availability page works without a login.",
+    detail:
+      "Agencies and brands see what is open and at what rate. They write to you with dates, not questions."
+  },
+  {
+    n: "06",
+    name: "Your data, your rules",
+    line: "Row-level security keeps every client on their own rows.",
+    detail:
+      "Sales and admin write. Clients read only their boards and inspections. The database enforces it, so a bad login is not a breach."
+  }
+];
+---
+
+<section class="wrap py-16" data-ledger>
+  <h2 class="display text-[clamp(2rem,5vw,3.5rem)]">What it changes for the business</h2>
+  <div class="mt-10">
+    {
+      rows.map((row) => (
+        <button class="ledger-row py-5" type="button" data-row>
+          <div class="grid gap-3 md:grid-cols-[4rem_minmax(0,16rem)_1fr] md:items-baseline">
+            <span class="mono text-sm">{row.n}</span>
+            <span class="font-semibold">{row.name}</span>
+            <span>{row.line}</span>
+          </div>
+          <p class="ledger-detail section-copy mt-4 mb-0">{row.detail}</p>
+        </button>
+      ))
+    }
+  </div>
+</section>

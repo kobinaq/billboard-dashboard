@@ -1,0 +1,20 @@
+---
+import Footer from "../components/Footer.astro";
+import Nav from "../components/Nav.astro";
+import { SITE } from "../config";
+import Layout from "../layouts/Layout.astro";
+---
+
+<Layout title={`No board at this address · ${SITE.name}`} description="That URL is not a page on this site.">
+  <Nav />
+  <main class="wrap py-24">
+    <h1 class="display text-[clamp(2.5rem,7vw,5.5rem)]">No board at this address.</h1>
+    <p class="section-copy mt-6">
+      The path does not exist. The home page is the product walkthrough.
+    </p>
+    <p class="mt-8">
+      <a class="cta" href="/">Back to {SITE.name}</a>
+    </p>
+  </main>
+  <Footer />
+</Layout>

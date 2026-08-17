@@ -1,0 +1,42 @@
+---
+const items = [
+  {
+    q: "What does it run on?",
+    a: "Supabase Postgres with row-level security. The operator app is a React dashboard. Auth, files, and two edge functions sit in the same project."
+  },
+  {
+    q: "Who owns the data?",
+    a: "You do. It lives in your Supabase project. This marketing page does not collect inventory."
+  },
+  {
+    q: "How do clients see their boards?",
+    a: "You create a login for them. The portal lists only the contracts tied to that profile: boards, dates, payment status, inspections."
+  },
+  {
+    q: "What if a client still owes?",
+    a: "Partial and unpaid stay visible on the dashboard. The status is a calculation, not a button someone can press."
+  },
+  {
+    q: "Does it work on phones in the field?",
+    a: "Inspections and the public availability page are usable on a phone. The booking calendar is clearer on a laptop."
+  },
+  {
+    q: "What does it cost?",
+    a: "Early access. Mail us and we walk the product with you. No self-serve signup and no card form on this page."
+  }
+];
+---
+
+<section id="faq" class="wrap py-16">
+  <h2 class="display text-[clamp(2rem,5vw,3.5rem)]">Questions we actually get</h2>
+  <div class="mt-8">
+    {
+      items.map((item) => (
+        <details class="faq">
+          <summary>{item.q}</summary>
+          <p class="section-copy mt-0 mb-6">{item.a}</p>
+        </details>
+      ))
+    }
+  </div>
+</section>

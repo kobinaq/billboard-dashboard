@@ -1,0 +1,122 @@
+<section id="how" class="wrap py-16 md:h-screen" data-walkthrough>
+  <div class="grid gap-10 md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.4fr)] md:items-center">
+    <div>
+      <h2 class="display text-[clamp(2rem,5vw,3.5rem)]">The three screens that pay for the fuel</h2>
+      <ol class="mt-8 list-none space-y-6 p-0">
+        <li class="is-current" data-step>
+          <p class="mono m-0 text-sm">01</p>
+          <p class="mt-1 mb-0 font-semibold">Dashboard</p>
+          <p class="mt-1 mb-0 text-sm">
+            Occupied faces, active monthly cedi, and the contracts inside 30 days of the
+            end. The money you are about to lose is a row, not a surprise.
+          </p>
+        </li>
+        <li data-step>
+          <p class="mono m-0 text-sm">02</p>
+          <p class="mt-1 mb-0 font-semibold">Contract calendar</p>
+          <p class="mt-1 mb-0 text-sm">
+            One row per face. A draft or active bar blocks the next booking before it
+            saves, so two agents cannot both promise the same dates.
+          </p>
+        </li>
+        <li data-step>
+          <p class="mono m-0 text-sm">03</p>
+          <p class="mt-1 mb-0 font-semibold">Client portal</p>
+          <p class="mt-1 mb-0 text-sm">
+            Advertisers check their own boards, dates, and payment status. Fewer calls to
+            your line.
+          </p>
+        </li>
+      </ol>
+      <p class="mt-8 mb-0 text-sm">
+        DOM reconstructions of the running app, not screenshots.
+      </p>
+    </div>
+
+    <div class="relative min-h-[340px]">
+      <div class="frame absolute inset-0" data-frame>
+        <div class="frame-chrome">
+          <span class="frame-dot"></span>
+          <span class="frame-dot"></span>
+          <span class="frame-dot"></span>
+          <span class="mono">/dashboard</span>
+        </div>
+        <div class="screen grid gap-3 p-4 sm:grid-cols-3">
+          <div class="border border-slate-200 bg-white p-3">
+            <p class="m-0 text-xs text-slate-500">Billboards</p>
+            <p class="mt-2 mb-0 text-2xl font-semibold">5</p>
+          </div>
+          <div class="border border-slate-200 bg-white p-3">
+            <p class="m-0 text-xs text-slate-500">Occupied</p>
+            <p class="mt-2 mb-0 text-2xl font-semibold">3</p>
+          </div>
+          <div class="border border-slate-200 bg-white p-3">
+            <p class="m-0 text-xs text-slate-500">Active monthly</p>
+            <p class="mt-2 mb-0 text-2xl font-semibold">GH₵ 66,000</p>
+          </div>
+          <div class="border border-slate-200 bg-white p-3 sm:col-span-3">
+            <p class="m-0 text-sm font-semibold">CNT-2026-014 · BlueWave Telecom</p>
+            <p class="mt-1 mb-0 text-xs text-slate-500">Accra Mall Face A · partial</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="frame absolute inset-0" data-frame>
+        <div class="frame-chrome">
+          <span class="frame-dot"></span>
+          <span class="frame-dot"></span>
+          <span class="frame-dot"></span>
+          <span class="mono">/contracts/calendar</span>
+        </div>
+        <div class="screen space-y-3 p-4">
+          <div>
+            <p class="m-0 text-xs">ACC-001 Face A</p>
+            <div class="relative mt-1 h-8 bg-slate-200">
+              <div class="absolute top-1 left-[12%] h-6 w-[46%] bg-[#1b4332]"></div>
+            </div>
+          </div>
+          <div>
+            <p class="m-0 text-xs">ACC-001 Face B</p>
+            <div class="relative mt-1 h-8 bg-slate-200">
+              <div class="absolute top-1 left-[38%] h-6 w-[28%] bg-[#1b4332]"></div>
+            </div>
+          </div>
+          <div>
+            <p class="m-0 text-xs">KUM-014 Digital</p>
+            <div class="relative mt-1 h-8 bg-slate-200">
+              <div class="absolute top-1 left-[22%] h-6 w-[58%] bg-[#1b4332]"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="frame absolute inset-0" data-frame>
+        <div class="frame-chrome">
+          <span class="frame-dot"></span>
+          <span class="frame-dot"></span>
+          <span class="frame-dot"></span>
+          <span class="mono">/portal</span>
+        </div>
+        <div class="screen grid gap-3 p-4 sm:grid-cols-3">
+          <div class="border border-slate-200 bg-white p-3">
+            <p class="m-0 text-xs text-slate-500">Active boards</p>
+            <p class="mt-2 mb-0 text-2xl font-semibold">2</p>
+          </div>
+          <div class="border border-slate-200 bg-white p-3">
+            <p class="m-0 text-xs text-slate-500">Contracts</p>
+            <p class="mt-2 mb-0 text-2xl font-semibold">2</p>
+          </div>
+          <div class="border border-slate-200 bg-white p-3">
+            <p class="m-0 text-xs text-slate-500">Latest end</p>
+            <p class="mt-2 mb-0 text-2xl font-semibold">31 Dec 2026</p>
+          </div>
+          <div class="border border-slate-200 bg-white p-3 sm:col-span-3">
+            <p class="m-0 font-semibold">Accra Mall</p>
+            <p class="mt-1 mb-0 text-sm text-[#1b4332]">Face A</p>
+            <p class="mt-1 mb-0 text-xs text-slate-500">1 Jul 2026 – 31 Dec 2026</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

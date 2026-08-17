@@ -1,0 +1,101 @@
+---
+const boards = [
+  {
+    name: "Accra Mall",
+    face: "Face A",
+    code: "ACC-001",
+    place: "Greater Accra · Spintex Road · East",
+    status: "Booked through 31 Dec 2026",
+    rate: "GH₵ 18,000 / 6 mo",
+    bars: [{ start: "2026-07-01", end: "2026-12-31", label: "Occupied" }]
+  },
+  {
+    name: "Accra Mall",
+    face: "Face B",
+    code: "ACC-001",
+    place: "Greater Accra · Spintex Road · West",
+    status: "Open after 30 Nov 2026",
+    rate: "GH₵ 18,000 / 6 mo",
+    bars: [{ start: "2026-09-01", end: "2026-11-30", label: "Occupied" }]
+  },
+  {
+    name: "Kumasi City Centre",
+    face: "Digital screen",
+    code: "KUM-014",
+    place: "Ashanti · Adum · North",
+    status: "Booked through 14 Feb 2027",
+    rate: "GH₵ 25,000 / 6 mo",
+    bars: [{ start: "2026-08-15", end: "2027-02-14", label: "Occupied" }]
+  },
+  {
+    name: "Tema Harbour Approach",
+    face: "Face A",
+    code: "TEM-009",
+    place: "Greater Accra · Harbour Road · South",
+    status: "Available now",
+    rate: "GH₵ 9,500 / 6 mo",
+    bars: []
+  },
+  {
+    name: "Ho Central Roundabout",
+    face: "Digital screen",
+    code: "HO-003",
+    place: "Volta · Central Roundabout · East",
+    status: "Open after 31 Oct 2026",
+    rate: "GH₵ 12,000 / 6 mo",
+    bars: [{ start: "2026-06-01", end: "2026-10-31", label: "Occupied" }]
+  }
+];
+---
+
+<section id="product" class="wrap py-16" data-timeline>
+  <h2 class="display text-[clamp(2rem,5vw,3.75rem)]">A client calls. You open one page.</h2>
+  <p class="section-copy mt-4">
+    This is your public availability at <span class="mono">/availability</span>. Rates in
+    cedis and the next open date. The same numbers sit
+    behind your dashboard. When an agency or a brand asks what is free in November, you
+    send the link instead of promising to get back to them.
+  </p>
+
+  <div class="mt-8 flex flex-wrap items-center gap-2">
+    <button class="view-btn" type="button" data-view="month">Month</button>
+    <button class="view-btn is-active" type="button" data-view="six">6 months</button>
+    <p class="mono m-0 ml-2 text-sm">1 Aug 2026 window</p>
+  </div>
+
+  <div class="mt-6 overflow-x-auto">
+    <div class="min-w-[720px]">
+      {
+        boards.map((board) => (
+          <div class="grid gap-4 border-t border-[var(--color-rule)] py-5 md:grid-cols-[280px_1fr]">
+            <div>
+              <p class="m-0 font-semibold">
+                {board.name} · {board.face}
+                <span class="mono ml-2 text-xs">{board.code}</span>
+              </p>
+              <p class="mt-1 mb-0 text-sm">{board.place}</p>
+              <p class="mt-2 mb-0 font-semibold">{board.status}</p>
+              <p class="mono mt-1 mb-0 text-sm">{board.rate}</p>
+            </div>
+            <div class="track">
+              {board.bars.length === 0 ? (
+                <p class="absolute left-3 top-2.5 m-0 text-sm">Open in this period</p>
+              ) : (
+                board.bars.map((bar) => (
+                  <div
+                    class="bar-occupied absolute top-1.5 h-8 overflow-hidden px-2 py-1.5 text-xs"
+                    data-bar
+                    data-start={bar.start}
+                    data-end={bar.end}
+                  >
+                    {bar.label}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        ))
+      }
+    </div>
+  </div>
+</section>
