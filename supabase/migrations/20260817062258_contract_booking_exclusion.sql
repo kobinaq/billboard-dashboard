@@ -33,9 +33,6 @@ begin
 end;
 $$;
 
-drop trigger if exists contracts_prevent_overlap on public.contracts;
-drop function if exists public.prevent_contract_overlap();
-
 do $$
 begin
   if not exists (
@@ -52,3 +49,6 @@ begin
       where (status in ('draft', 'active'));
   end if;
 end $$;
+
+drop trigger if exists contracts_prevent_overlap on public.contracts;
+drop function if exists public.prevent_contract_overlap();

@@ -396,6 +396,10 @@ security definer
 set search_path = public
 as $$
 begin
+  if auth.uid() is not null and not public.is_sales_or_admin() then
+    return;
+  end if;
+
   update public.contracts c
   set status = computed.next_status,
     updated_at = now()
@@ -638,9 +642,6 @@ create trigger contracts_assign_billboard_from_face
 before insert or update of billboard_face_id, billboard_id on public.contracts
 for each row execute function public.sync_contract_billboard_from_face();
 
-drop trigger if exists contracts_prevent_overlap on public.contracts;
-drop function if exists public.prevent_contract_overlap();
-
 do $$
 begin
   if not exists (
@@ -657,6 +658,9 @@ begin
       where (status in ('draft', 'active'));
   end if;
 end $$;
+
+drop trigger if exists contracts_prevent_overlap on public.contracts;
+drop function if exists public.prevent_contract_overlap();
 
 drop trigger if exists contracts_set_total_value on public.contracts;
 create trigger contracts_set_total_value
@@ -919,6 +923,27 @@ to authenticated
 using (public.is_sales_or_admin())
 with check (public.is_sales_or_admin());
 
+create or replace function public.client_can_view_billboard_inspection(
+  p_billboard_id uuid,
+  p_inspected_at timestamptz
+)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.contracts c
+    join public.clients cl on cl.id = c.client_id
+    where c.billboard_id = p_billboard_id
+      and cl.profile_id = auth.uid()
+      and c.status <> 'cancelled'
+      and (p_inspected_at at time zone 'utc')::date between c.start_date and c.end_date
+  );
+$$;
+
 drop policy if exists "inspection_logs_read_access" on public.inspection_logs;
 create policy "inspection_logs_read_access"
 on public.inspection_logs
@@ -928,13 +953,7 @@ using (
   public.is_active_user()
   and (
     public.current_role() in ('admin', 'sales', 'inspector')
-    or exists (
-      select 1
-      from public.contracts c
-      join public.clients cl on cl.id = c.client_id
-      where c.billboard_id = inspection_logs.billboard_id
-        and cl.profile_id = auth.uid()
-    )
+    or public.client_can_view_billboard_inspection(billboard_id, inspected_at)
   )
 );
 
@@ -985,13 +1004,7 @@ using (
     where il.id = inspection_photos.inspection_id
       and (
         public.current_role() in ('admin', 'sales', 'inspector')
-        or exists (
-          select 1
-          from public.contracts c
-          join public.clients cl on cl.id = c.client_id
-          where c.billboard_id = il.billboard_id
-            and cl.profile_id = auth.uid()
-        )
+        or public.client_can_view_billboard_inspection(il.billboard_id, il.inspected_at)
       )
   )
 );
@@ -1035,8 +1048,7 @@ values
   ('billboard-media', 'billboard-media', true),
   ('contract-artwork', 'contract-artwork', false),
   ('inspection-photos', 'inspection-photos', false)
-on conflict (id) do update
-set public = excluded.public;
+on conflict (id) do nothing;
 
 drop policy if exists "billboard_media_read" on storage.objects;
 create policy "billboard_media_read"
@@ -1106,11 +1118,9 @@ using (
     or exists (
       select 1
       from public.inspection_logs il
-      join public.contracts c on c.billboard_id = il.billboard_id
-      join public.clients cl on cl.id = c.client_id
       where split_part(name, '/', 1) = 'inspections'
         and split_part(name, '/', 2) = il.id::text
-        and cl.profile_id = auth.uid()
+        and public.client_can_view_billboard_inspection(il.billboard_id, il.inspected_at)
     )
   )
 );

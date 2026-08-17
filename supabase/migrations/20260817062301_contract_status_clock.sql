@@ -5,6 +5,10 @@ security definer
 set search_path = public
 as $$
 begin
+  if auth.uid() is not null and not public.is_sales_or_admin() then
+    return;
+  end if;
+
   update public.contracts c
   set status = computed.next_status,
     updated_at = now()

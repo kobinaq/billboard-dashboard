@@ -59,7 +59,9 @@ npm start
    - `billboard-media` public
    - `contract-artwork` private
    - `inspection-photos` private
-4. On an existing project, do not re-run the full schema file. Apply the files in [`supabase/migrations`](supabase/migrations) in filename order instead.
+
+   New inspection uploads go to `inspection-photos`. Rows that already store a public `billboard-media` URL keep working until those photos are re-uploaded.
+4. On an existing project, do not re-run the full schema file. Apply the files in [`supabase/migrations`](supabase/migrations) in filename order instead. If `contracts_no_overlapping_bookings` fails, overlapping draft or active rows already exist. Fix those rows, then rerun that file. The old overlap trigger stays in place until the constraint succeeds.
 5. Deploy the Edge Functions:
 
 ```bash

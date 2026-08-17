@@ -12,9 +12,12 @@ describe("schema invariants", () => {
     expect(schema).toMatch(/new\.email,\s*'client',/s);
   });
 
-  it("enforces non-overlapping draft and active bookings in Postgres", () => {
-    expect(schema).toMatch(/contracts_no_overlapping_bookings/);
+  it("adds the overlap constraint before dropping the old trigger", () => {
     expect(schema).toMatch(/exclude using gist/i);
+    const constraintAt = schema.indexOf("contracts_no_overlapping_bookings");
+    const dropAt = schema.indexOf("drop trigger if exists contracts_prevent_overlap");
+    expect(constraintAt).toBeGreaterThan(-1);
+    expect(dropAt).toBeGreaterThan(constraintAt);
   });
 
   it("keeps drafts from self-activating", () => {
