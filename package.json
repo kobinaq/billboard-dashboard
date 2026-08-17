@@ -2,6 +2,7 @@
   "name": "billboard-dashboard",
   "version": "0.1.0",
   "private": true,
+  "homepage": "/app",
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
     "@supabase/supabase-js": "^2.49.8",
@@ -19,6 +20,7 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
+    "build:web": "npm run build && npm --prefix site install && npm --prefix site run build && node scripts/compose-static.mjs",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },

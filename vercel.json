@@ -1,0 +1,28 @@
+{
+  "framework": null,
+  "buildCommand": "npm run build:web",
+  "outputDirectory": "site/dist",
+  "redirects": [
+    { "source": "/login", "destination": "/app/login", "permanent": true },
+    { "source": "/dashboard", "destination": "/app/dashboard", "permanent": true },
+    { "source": "/dashboard/:path*", "destination": "/app/dashboard/:path*", "permanent": true },
+    { "source": "/billboards", "destination": "/app/billboards", "permanent": true },
+    { "source": "/billboards/:path*", "destination": "/app/billboards/:path*", "permanent": true },
+    { "source": "/clients", "destination": "/app/clients", "permanent": true },
+    { "source": "/clients/:path*", "destination": "/app/clients/:path*", "permanent": true },
+    { "source": "/contracts", "destination": "/app/contracts", "permanent": true },
+    { "source": "/contracts/:path*", "destination": "/app/contracts/:path*", "permanent": true },
+    { "source": "/inspections", "destination": "/app/inspections", "permanent": true },
+    { "source": "/inspections/:path*", "destination": "/app/inspections/:path*", "permanent": true },
+    { "source": "/payments", "destination": "/app/payments", "permanent": true },
+    { "source": "/payments/:path*", "destination": "/app/payments/:path*", "permanent": true },
+    { "source": "/settings", "destination": "/app/settings", "permanent": true },
+    { "source": "/settings/:path*", "destination": "/app/settings/:path*", "permanent": true },
+    { "source": "/portal", "destination": "/app/portal", "permanent": true },
+    { "source": "/portal/:path*", "destination": "/app/portal/:path*", "permanent": true }
+  ],
+  "rewrites": [
+    { "source": "/app", "destination": "/app/index.html" },
+    { "source": "/app/:path*", "destination": "/app/index.html" }
+  ]
+}

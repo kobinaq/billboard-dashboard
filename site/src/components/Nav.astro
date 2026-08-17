@@ -1,14 +1,41 @@
 ---
 import { SITE } from "../config";
+
+const path = Astro.url.pathname.replace(/\/$/, "") || "/";
+const home = path === "/";
+const onAvailability = path === SITE.availabilityPath;
 ---
 
-<header class="site-nav" data-nav>
+<header class:list={["site-nav", !home && "is-scrolled"]} data-nav>
   <div class="wrap flex h-16 items-center justify-between gap-4">
     <a class="wordmark" href="/">{SITE.name}</a>
     <nav class="flex flex-wrap items-center gap-x-5 gap-y-1 text-[0.95rem]" aria-label="Page">
-      <a class="plain" data-scroll href="#product">Availability</a>
-      <a class="plain" data-scroll href="#how">Walkthrough</a>
-      <a class="plain" data-scroll href="#faq">Faq</a>
+      <a class="plain" href={SITE.availabilityPath} aria-current={onAvailability ? "page" : undefined}>
+        Availability
+      </a>
+      {
+        home ? (
+          <a class="plain" data-scroll href="#how">
+            Walkthrough
+          </a>
+        ) : (
+          <a class="plain" href="/#how">
+            Walkthrough
+          </a>
+        )
+      }
+      {
+        home ? (
+          <a class="plain" data-scroll href="#faq">
+            Faq
+          </a>
+        ) : (
+          <a class="plain" href="/#faq">
+            Faq
+          </a>
+        )
+      }
+      <a class="plain" href={SITE.loginPath}>Staff login</a>
       <a class="cta nav-cta" href={SITE.walkthroughMailto}>Book a walkthrough</a>
     </nav>
   </div>

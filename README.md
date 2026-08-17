@@ -1,39 +1,46 @@
 # ThinkAloud Billboard Dashboard
 
-ThinkAloud Billboard Dashboard is a React + Supabase application for managing billboard inventory, contracts, payments, inspections, and client portal access from one responsive workspace.
+ThinkAloud Billboard Dashboard is a React + Supabase application for managing billboard inventory, contracts, payments, inspections, and client portal access from one workspace.
 
-It also includes a public `/availability` page where prospects can view billboard availability and public rate cards without signing in.
+The public site is a separate Astro app in `site/`. After a combined build:
+
+- `/` is the marketing site
+- `/availability` is the live public board, fed by the `public_billboard_availability` RPC
+- `/app` is the operator dashboard (`/app/login`, `/app/dashboard`, and the rest)
 
 ## Stack
 
-- React 18 with Create React App
-- React Router v6
-- Tailwind CSS
+- Marketing: Astro 7, Tailwind v4, GSAP
+- App: React 18 with Create React App, React Router v6, Tailwind CSS v3
 - Supabase Auth, Postgres, Storage, and RLS
 - React Hook Form + Zod
 - Mapbox GL JS
 - react-hot-toast
 
+The marketing `/availability` page calls the RPC with `fetch` and the anon key. It does not ship supabase-js.
+
 ## Project Structure
 
-The app follows the structure described in the product prompt:
-
-- `src/components` for layout and shared UI primitives
-- `src/pages` for module screens
-- `src/context` for auth and app shell state
-- `src/hooks` for Supabase-backed data access
-- `src/lib` for constants, Supabase setup, and helpers
-- `supabase/schema.sql` for a full bootstrap of schema, RLS, triggers, and storage policies
-- `supabase/migrations` for incremental SQL to apply on an existing project
+- `site/` marketing site and public availability
+- `src/components` layout and shared UI primitives
+- `src/pages` operator screens
+- `src/context` auth and app shell state
+- `src/hooks` Supabase-backed data access
+- `src/lib` constants, Supabase setup, and helpers
+- `supabase/schema.sql` full bootstrap of schema, RLS, triggers, and storage policies
+- `supabase/migrations` incremental SQL for an existing project
 - public availability data is exposed through a sanitized Supabase RPC, not direct anonymous reads on private business tables
 - `.github/workflows/keep-alive.yml` for Supabase free-tier uptime support
 
 ## Local Setup
 
+Node 22.12 or newer is required for the marketing site.
+
 1. Install dependencies:
 
 ```bash
 npm install
+npm --prefix site install
 ```
 
 2. Copy `.env.example` to `.env` and fill in:
@@ -44,11 +51,21 @@ REACT_APP_SUPABASE_ANON_KEY=your_supabase_anon_key
 REACT_APP_MAPBOX_TOKEN=your_mapbox_token
 ```
 
-3. Start the development server:
+The marketing site reads those `REACT_APP_SUPABASE_*` values (or `PUBLIC_SUPABASE_URL` / `PUBLIC_SUPABASE_ANON_KEY`) for `/availability`.
+
+3. Run both servers:
 
 ```bash
 npm start
 ```
+
+Dashboard: `http://localhost:3000/app/login`. A request to `http://localhost:3000/` redirects there.
+
+```bash
+npm --prefix site run dev
+```
+
+Marketing: `http://localhost:4321/`. That server proxies `/app` to the dashboard on port 3000.
 
 ## Supabase Setup
 
@@ -98,7 +115,7 @@ set role = 'admin',
 where email = 'admin@thinkaloud.com';
 ```
 
-3. Sign in through `/login`.
+3. Sign in through `/app/login`.
 
 ## Sample Data
 
@@ -132,14 +149,28 @@ The sample rows are tagged with `[sample]` in their notes so they are easy to id
 
 ## Deployment
 
+Build the marketing site and the dashboard into one static tree:
+
+```bash
+npm run build:web
+```
+
+That writes Astro to `site/dist`, then copies the CRA build to `site/dist/app`. Publish `site/dist`.
+
+SPA fallback for the dashboard: `/app/*` must serve `/app/index.html`. Netlify picks this up from `site/public/_redirects`. Vercel uses the repo-root `vercel.json`. On Render, add a rewrite with source `/app/*` and destination `/app/index.html`.
+
+Old dashboard URLs such as `/login` redirect to `/app/login`.
+
 ### Frontend on Vercel
 
 1. Push this repository to GitHub.
-2. Import the project into Vercel.
-3. Set the three `REACT_APP_*` environment variables in Vercel.
-4. Deploy using the default CRA build command:
-   - Build command: `npm run build`
-   - Output directory: `build`
+2. Import the project into Vercel. Leave the root directory at the repository root so `vercel.json` applies.
+3. Set the three `REACT_APP_*` environment variables. The availability page needs the Supabase URL and anon key at build time.
+4. Deploy. `vercel.json` sets:
+   - Build command: `npm run build:web`
+   - Output directory: `site/dist`
+
+In Supabase Authentication, allow redirects under `https://your-domain/app/**`. `SITE_URL` may be the site origin or `https://your-domain/app/login`. If it is only the origin, invite links go to `/app/login`.
 
 ### Supabase Keep-Alive
 
@@ -160,9 +191,9 @@ If you are on the Supabase free tier:
 
 ## Verification Checklist
 
-- `npm install`
-- `npm start`
-- `npm run build`
+- `npm start` and `npm --prefix site run dev`
+- `npm run build:web`
+- `npm --prefix site run budget` after a site build (ignores `site/dist/app`)
 - Run the SQL in `supabase/schema.sql`
 - Deploy `admin-user-upsert` and `admin-user-deactivate`
 - Verify each role lands on the expected home route

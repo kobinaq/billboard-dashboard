@@ -5,9 +5,10 @@ import "../styles/global.css";
 type Props = {
   title: string;
   description: string;
+  skipHref?: string;
 };
 
-const { title, description } = Astro.props;
+const { title, description, skipHref = "#content" } = Astro.props;
 const jsonLd = {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
@@ -42,7 +43,7 @@ const jsonLd = {
     <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
   </head>
   <body>
-    <a class="skip" href="#product">Skip to product</a>
+    <a class="skip" href={skipHref}>Skip to content</a>
     <slot />
   </body>
 </html>

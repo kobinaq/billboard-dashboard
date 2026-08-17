@@ -115,6 +115,23 @@ async function ensureClientLink(serviceClient, payload, profileId: string) {
   return data.id;
 }
 
+function inviteRedirectTo(): string | undefined {
+  const raw = Deno.env.get("SITE_URL") || Deno.env.get("PUBLIC_SITE_URL");
+  if (!raw) {
+    return undefined;
+  }
+
+  try {
+    const url = new URL(raw);
+    if (url.pathname === "/" || url.pathname === "") {
+      url.pathname = "/app/login";
+    }
+    return url.toString();
+  } catch {
+    return raw;
+  }
+}
+
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") {
     return optionsResponse();
@@ -127,8 +144,7 @@ Deno.serve(async (request) => {
 
   try {
     const payload = userUpsertSchema.parse(await request.json());
-    const redirectTo =
-      Deno.env.get("SITE_URL") || Deno.env.get("PUBLIC_SITE_URL") || undefined;
+    const redirectTo = inviteRedirectTo();
 
     let profile =
       payload.mode === "update" && payload.userId

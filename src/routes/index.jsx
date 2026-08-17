@@ -23,7 +23,6 @@ import PaymentForm from "pages/payments/PaymentForm";
 import ClientPortal from "pages/portal/ClientPortal";
 import ClientPortalBoards from "pages/portal/ClientPortalBoards";
 import ClientPortalContracts from "pages/portal/ClientPortalContracts";
-import PublicAvailability from "pages/public/PublicAvailability";
 import SettingsPage from "pages/settings/SettingsPage";
 import ProtectedRoute from "./ProtectedRoute";
 import RoleRoute from "./RoleRoute";
@@ -37,7 +36,6 @@ export default function AppRoutes() {
         path="/login"
         element={isAuthenticated ? <Navigate to={defaultRoute} replace /> : <Login />}
       />
-      <Route path="/availability" element={<PublicAvailability />} />
 
       <Route element={<ProtectedRoute />}>
         <Route element={<RoleRoute allow={["admin", "sales", "inspector"]} />}>

@@ -1,46 +1,16 @@
 import { Flip, gsap } from "../gsap";
 import { qs, qsa } from "../dom";
-
-type TimelineView = "month" | "six";
+import { applyBarLayout, isTimelineSpan, type TimelineSpan } from "../timeline-window";
 
 const WINDOW_START = Date.UTC(2026, 7, 1);
 
-function isTimelineView(value: string): value is TimelineView {
+function isDemoView(value: string): value is Exclude<TimelineSpan, "year"> {
   return value === "month" || value === "six";
 }
 
-function daysInView(view: TimelineView): number {
-  return view === "month" ? 31 : 183;
-}
-
-function parseDay(value: string): number {
-  return Date.parse(`${value}T00:00:00Z`);
-}
-
-function layoutBars(root: HTMLElement, view: TimelineView): void {
-  const span = daysInView(view) * 86400000;
-  const windowEnd = WINDOW_START + span;
-
+function layoutBars(root: HTMLElement, view: Exclude<TimelineSpan, "year">): void {
   qsa(root, "[data-bar]").forEach((bar) => {
-    const startRaw = bar.dataset.start;
-    const endRaw = bar.dataset.end;
-    if (!startRaw || !endRaw) {
-      bar.style.display = "none";
-      return;
-    }
-
-    const start = Math.max(parseDay(startRaw), WINDOW_START);
-    const end = Math.min(parseDay(endRaw) + 86400000, windowEnd);
-    if (end <= WINDOW_START || start >= windowEnd) {
-      bar.style.display = "none";
-      return;
-    }
-
-    const left = ((start - WINDOW_START) / span) * 100;
-    const width = Math.max(((end - start) / span) * 100, 4);
-    bar.style.display = "block";
-    bar.style.left = `${left}%`;
-    bar.style.width = `${width}%`;
+    applyBarLayout({ bar, windowStart: WINDOW_START, span: view });
   });
 }
 
@@ -51,13 +21,13 @@ export function initTimeline(options: { motion: boolean }): void {
   }
 
   const buttons = qsa(root, "[data-view]");
-  let view: TimelineView = "six";
+  let view: Exclude<TimelineSpan, "year"> = "six";
   layoutBars(root, view);
 
   buttons.forEach((button) => {
     button.addEventListener("click", () => {
       const next = button.dataset.view;
-      if (!next || !isTimelineView(next) || next === view) {
+      if (!next || !isTimelineSpan(next) || !isDemoView(next) || next === view) {
         return;
       }
 

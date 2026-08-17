@@ -411,6 +411,19 @@ details.faq[open] > summary::after {
   color: var(--color-paper);
 }
 
+.avail-ticks {
+  position: relative;
+  height: 1.15rem;
+  margin-bottom: 0.45rem;
+}
+
+.avail-tick {
+  position: absolute;
+  top: 0;
+  font-size: 0.72rem;
+  color: color-mix(in srgb, var(--color-ink) 70%, transparent);
+}
+
 .photo-band {
   overflow: hidden;
   aspect-ratio: 16 / 9;

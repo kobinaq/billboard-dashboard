@@ -6,5 +6,7 @@ export const SITE = {
   walkthroughMailto:
     "mailto:kobinastudios@gmail.com?subject=Boardbook%20walkthrough",
   contactEmail: "kobinastudios@gmail.com",
-  github: "https://github.com/kobinaq/billboard-dashboard"
+  github: "https://github.com/kobinaq/billboard-dashboard",
+  loginPath: "/app/login",
+  availabilityPath: "/availability"
 } as const;
