@@ -326,6 +326,79 @@ details.faq[open] > summary::after {
   border-radius: var(--radius-site);
 }
 
+.collision-board {
+  max-width: 42rem;
+}
+
+.collision-months {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  margin-bottom: 0.35rem;
+  color: color-mix(in srgb, var(--color-ink) 70%, transparent);
+}
+
+.collision-track {
+  height: 3.25rem;
+  overflow: hidden;
+}
+
+.collision-held {
+  position: absolute;
+  top: 0.45rem;
+  left: 36%;
+  z-index: 1;
+  width: 32%;
+  height: 2.35rem;
+  padding: 0.55rem 0.75rem;
+  font-size: 0.875rem;
+}
+
+.collision-draft {
+  position: absolute;
+  top: 0.45rem;
+  left: 0;
+  z-index: 2;
+  width: 22%;
+  height: 2.35rem;
+  padding: 0.55rem 0.75rem;
+  font-size: 0.875rem;
+  cursor: grab;
+  background: var(--color-amber);
+  color: var(--color-ink-deep);
+  border-radius: var(--radius-site);
+  user-select: none;
+  touch-action: none;
+}
+
+.collision-draft:active {
+  cursor: grabbing;
+}
+
+.collision-held.is-conflict,
+.collision-draft.is-conflict {
+  outline: 2px solid #9a3412;
+  outline-offset: 1px;
+}
+
+.collision-error {
+  visibility: hidden;
+  margin: 0.85rem 0 0;
+  min-height: 2.6rem;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-site);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: #9a3412;
+  overflow-wrap: anywhere;
+}
+
+.collision-error.is-visible {
+  visibility: visible;
+  border-color: #9a3412;
+}
+
 .view-btn {
   min-height: 2.25rem;
   padding: 0 0.75rem;
@@ -338,16 +411,17 @@ details.faq[open] > summary::after {
   color: var(--color-paper);
 }
 
-.collision-error {
-  display: none;
-  margin-top: 1rem;
-  font-family: var(--font-mono);
-  font-size: 0.82rem;
-  color: #9a3412;
+.avail-ticks {
+  position: relative;
+  height: 1.15rem;
+  margin-bottom: 0.45rem;
 }
 
-.collision-error.is-visible {
-  display: block;
+.avail-tick {
+  position: absolute;
+  top: 0;
+  font-size: 0.72rem;
+  color: color-mix(in srgb, var(--color-ink) 70%, transparent);
 }
 
 .photo-band {

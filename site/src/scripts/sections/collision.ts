@@ -23,65 +23,102 @@ export function initCollision(options: { motion: boolean }): void {
   }
 
   error.textContent = ERROR_TEXT;
-  const homeX = 24;
-  gsap.set(draft, { x: homeX });
+  const homeX = 16;
 
-  const reject = (): void => {
-    error.classList.add("is-visible");
-    gsap.to(draft, {
-      x: homeX,
-      duration: options.motion ? 0.6 : 0,
-      ease: options.motion ? "elastic.out(1, 0.55)" : "none"
-    });
+  const markConflict = (on: boolean): void => {
+    booked.classList.toggle("is-conflict", on);
+    draft.classList.toggle("is-conflict", on);
   };
 
-  const check = (): void => {
-    if (overlaps(draft.getBoundingClientRect(), booked.getBoundingClientRect())) {
-      reject();
-      return;
-    }
+  const hideError = (): void => {
     error.classList.remove("is-visible");
   };
 
-  Draggable.create(draft, {
+  const showError = (): void => {
+    error.classList.add("is-visible");
+  };
+
+  gsap.set(draft, { x: homeX });
+  hideError();
+
+  const reject = (): void => {
+    gsap.killTweensOf(draft);
+    gsap.to(draft, {
+      x: homeX,
+      duration: options.motion ? 0.55 : 0,
+      ease: options.motion ? "elastic.out(1, 0.6)" : "none",
+      onStart: showError,
+      onComplete() {
+        markConflict(false);
+      }
+    });
+  };
+
+  const colliding = (): boolean =>
+    overlaps(draft.getBoundingClientRect(), booked.getBoundingClientRect());
+
+  const created = Draggable.create(draft, {
     type: "x",
     bounds: track,
-    inertia: options.motion,
+    inertia: false,
     onDrag() {
-      error.classList.remove("is-visible");
+      hideError();
+      markConflict(colliding());
     },
-    onDragEnd: check
+    onDragEnd() {
+      if (colliding()) {
+        reject();
+        return;
+      }
+      markConflict(false);
+    }
   });
-
-  draft.setAttribute("tabindex", "0");
-  draft.setAttribute("role", "slider");
-  draft.setAttribute("aria-label", "Proposed booking");
-  draft.setAttribute("aria-valuemin", "0");
-  draft.setAttribute("aria-valuemax", "100");
+  const draggable = created[0];
+  if (!draggable) {
+    return;
+  }
 
   draft.addEventListener("keydown", (event) => {
     if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") {
       return;
     }
     event.preventDefault();
+    hideError();
     const current = gsap.getProperty(draft, "x");
     const x = typeof current === "number" ? current : homeX;
-    const next = event.key === "ArrowRight" ? x + 12 : x - 12;
-    gsap.set(draft, { x: Math.max(0, next) });
-    check();
+    const step = event.key === "ArrowRight" ? 16 : -16;
+    const max = Math.max(0, track.clientWidth - draft.offsetWidth);
+    gsap.set(draft, { x: Math.min(max, Math.max(0, x + step)) });
+    if (colliding()) {
+      reject();
+      return;
+    }
+    markConflict(false);
   });
 
   if (!options.motion) {
     return;
   }
 
-  const demo = gsap.timeline({
-    repeat: 2,
-    paused: true,
-    defaults: { ease: "house" }
+  const collideX = (): number => {
+    const heldLeft = booked.offsetLeft;
+    const draftWidth = draft.offsetWidth;
+    return Math.max(homeX, heldLeft - draftWidth * 0.45);
+  };
+
+  const demo = gsap.timeline({ paused: true });
+  demo.to(draft, {
+    x: () => collideX(),
+    duration: 0.9,
+    ease: "house",
+    onUpdate() {
+      markConflict(colliding());
+    }
   });
-  demo.to(draft, { x: 220, duration: 1.1 });
-  demo.add(() => check());
+  demo.add(() => {
+    draggable.update();
+    reject();
+  });
 
   gsap.timeline({
     scrollTrigger: {

@@ -3,6 +3,7 @@ import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 
 const dist = join(import.meta.dirname, "..", "dist");
+const app = join(dist, "app");
 const jsLimit = 95 * 1024;
 const cssLimit = 15 * 1024;
 
@@ -10,6 +11,9 @@ async function walk(dir, acc = []) {
   const entries = await readdir(dir, { withFileTypes: true });
   for (const entry of entries) {
     const path = join(dir, entry.name);
+    if (path === app) {
+      continue;
+    }
     if (entry.isDirectory()) {
       await walk(path, acc);
     } else {

@@ -1,0 +1,47 @@
+---
+import Footer from "../components/Footer.astro";
+import Nav from "../components/Nav.astro";
+import { SITE } from "../config";
+import Layout from "../layouts/Layout.astro";
+---
+
+<Layout
+  title={`Live availability · ${SITE.name}`}
+  description="Live billboard faces, occupied dates, and public rates. Same ledger the staff book against."
+>
+  <Nav />
+  <main id="content" class="wrap py-12" data-availability>
+    <h1 class="display text-[clamp(2.5rem,7vw,5.5rem)]">What is actually open.</h1>
+    <p class="section-copy mt-6">
+      Live faces and dates from the same ledger your staff book against. Send this page when
+      an agency asks what is free in November. Rates in cedis.
+    </p>
+    <p class="mt-4 mb-0 text-sm">
+      <a class="plain" href={SITE.loginPath}>Staff login</a>
+    </p>
+
+    <div class="mt-8 flex flex-wrap items-center gap-2">
+      <button class="view-btn" type="button" data-view="month">Month</button>
+      <button class="view-btn is-active" type="button" data-view="six">6 months</button>
+      <button class="view-btn" type="button" data-view="year">Annual</button>
+      <button class="view-btn" type="button" data-prev aria-label="Previous period">Prev</button>
+      <button class="view-btn" type="button" data-next aria-label="Next period">Next</button>
+      <button class="view-btn" type="button" data-today>Today</button>
+      <p class="mono m-0 ml-2 text-sm" data-window-label></p>
+    </div>
+
+    <p class="mt-8 mb-0" data-avail-status>Loading faces.</p>
+    <div class="mt-6 overflow-x-auto" data-avail-board hidden>
+      <div class="min-w-[720px]">
+        <div class="avail-ticks" data-ticks></div>
+        <div data-avail-list></div>
+      </div>
+    </div>
+  </main>
+  <Footer />
+</Layout>
+
+<script>
+  import { initAvailability } from "../scripts/availability";
+  initAvailability();
+</script>

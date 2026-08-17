@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Building2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -117,9 +117,9 @@ export default function Login() {
             </Button>
           </form>
           <div className="mt-6 border-t border-slate-200 pt-5 text-center">
-            <Link to="/availability" className="text-sm font-semibold text-brand-700 hover:text-brand-900">
+            <a href="/availability" className="text-sm font-semibold text-brand-700 hover:text-brand-900">
               View public billboard availability
-            </Link>
+            </a>
           </div>
         </Card>
       </div>

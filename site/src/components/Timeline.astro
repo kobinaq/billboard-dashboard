@@ -1,4 +1,6 @@
 ---
+import { SITE } from "../config";
+
 const boards = [
   {
     name: "Accra Mall",
@@ -51,10 +53,10 @@ const boards = [
 <section id="product" class="wrap py-16" data-timeline>
   <h2 class="display text-[clamp(2rem,5vw,3.75rem)]">A client calls. You open one page.</h2>
   <p class="section-copy mt-4">
-    This is your public availability at <span class="mono">/availability</span>. Rates in
-    cedis and the next open date. The same numbers sit
-    behind your dashboard. When an agency or a brand asks what is free in November, you
-    send the link instead of promising to get back to them.
+    Sample faces for the walkthrough. The live board is
+    <a class="plain" href={SITE.availabilityPath}>{SITE.availabilityPath}</a>,
+    with rates in cedis and the next open date from the same numbers your staff book against.
+    When an agency asks what is free in November, send that link.
   </p>
 
   <div class="mt-8 flex flex-wrap items-center gap-2">

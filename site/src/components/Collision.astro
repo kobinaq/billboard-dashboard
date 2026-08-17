@@ -1,34 +1,31 @@
 <section class="wrap py-16" data-collision>
   <h2 class="display text-[clamp(2rem,5vw,3.5rem)]">A double-booked face is a refund.</h2>
   <p class="section-copy mt-4">
-    In Accra and Kumasi, a face sells for about GH₵ 2,400 to 3,200 a month on a secondary
-    road, and past GH₵ 8,000 on a prime corridor. Sell the same six months twice and you
-    refund one client, pay to reprint and rehang the other, and lose both for the next
-    campaign. The fix is not a rule in a group chat. It is a database that will not commit
-    the overlap. Drag the amber bar onto the held face, or use the arrow keys.
+    A secondary face in Accra or Kumasi is about GH₵ 2,400 to 3,200 a month. Prime
+    corridors clear GH₵ 8,000. Sell the same six months twice and you refund one client,
+    reprint the other, and lose both for the next campaign.
+  </p>
+  <p class="section-copy mt-4">
+    Drag the amber booking onto the held face. Arrow keys also move it.
   </p>
 
-  <p class="mono mt-8 mb-2 text-sm">ACC-001 · Face A · 1 Aug – 31 Jan</p>
-  <div
-    class="track h-16"
-    data-track
-  >
-    <div
-      class="bar-occupied absolute top-3 h-10 w-[32%] px-3 py-2 text-sm"
-      style="left: 36%"
-      data-booked
-    >
-      Held
+  <div class="collision-board mt-10">
+    <p class="mono m-0 text-sm">ACC-001 · Face A</p>
+    <p class="mt-1 mb-3 text-sm">1 Aug 2026 – 31 Jan 2027</p>
+    <div class="collision-months mono text-xs" aria-hidden="true">
+      <span>Aug</span><span>Sep</span><span>Oct</span><span>Nov</span><span>Dec</span><span>Jan</span>
     </div>
-    <div
-      class="absolute top-3 h-10 w-[22%] cursor-grab bg-[#f97316] px-3 py-2 text-sm text-[#142f25]"
-      data-draft
-    >
-      New booking
+    <div class="track collision-track" data-track>
+      <div class="bar-occupied collision-held" data-booked>
+        Held
+      </div>
+      <div class="collision-draft" data-draft tabindex="0" role="slider" aria-label="Proposed booking" aria-valuemin="0" aria-valuemax="100">
+        New booking
+      </div>
     </div>
+    <p class="collision-error" data-error></p>
   </div>
-  <p class="collision-error" data-error></p>
   <p class="section-copy mt-6">
-    Not a toast, not a warning. The insert fails.
+    Not a toast. The insert never lands.
   </p>
 </section>

@@ -12,6 +12,8 @@ import {
 
 export const ROLES = ["admin", "sales", "inspector", "client"];
 
+export const APP_BASENAME = "/app";
+
 export const ROLE_HOME = {
   admin: "/dashboard",
   sales: "/dashboard",

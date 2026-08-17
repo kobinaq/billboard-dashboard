@@ -1,0 +1,17 @@
+/login                /app/login              301
+/dashboard            /app/dashboard          301
+/billboards           /app/billboards         301
+/billboards/*         /app/billboards/:splat  301
+/clients              /app/clients            301
+/clients/*            /app/clients/:splat     301
+/contracts            /app/contracts          301
+/contracts/*          /app/contracts/:splat   301
+/inspections          /app/inspections        301
+/inspections/*        /app/inspections/:splat 301
+/payments             /app/payments           301
+/payments/*           /app/payments/:splat    301
+/settings             /app/settings           301
+/settings/*           /app/settings/:splat    301
+/portal               /app/portal             301
+/portal/*             /app/portal/:splat      301
+/app/*                /app/index.html         200

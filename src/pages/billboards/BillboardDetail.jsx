@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { Button } from "components/ui/Button";
 import { Card } from "components/ui/Card";
 import { EmptyState } from "components/ui/EmptyState";
@@ -12,6 +12,7 @@ import { formatCurrency, formatDate } from "lib/utils";
 
 export default function BillboardDetail() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { role } = useAuth();
   const { data, loading, error } = useBillboards();
 
@@ -68,11 +69,11 @@ export default function BillboardDetail() {
         </div>
         <div className="flex flex-wrap gap-3">
           {(role === "admin" || role === "sales") && (
-            <Button variant="secondary" onClick={() => (window.location.href = `/billboards/${id}/edit`)}>
+            <Button variant="secondary" onClick={() => navigate(`/billboards/${id}/edit`)}>
               Edit board
             </Button>
           )}
-          <Button onClick={() => (window.location.href = `/inspections/new?billboard=${id}`)}>
+          <Button onClick={() => navigate(`/inspections/new?billboard=${id}`)}>
             Log inspection
           </Button>
         </div>
