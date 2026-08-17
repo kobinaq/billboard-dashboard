@@ -1,0 +1,36 @@
+---
+import Collision from "../components/Collision.astro";
+import Corridor from "../components/Corridor.astro";
+import Cta from "../components/Cta.astro";
+import Faq from "../components/Faq.astro";
+import Footer from "../components/Footer.astro";
+import Hero from "../components/Hero.astro";
+import Ledger from "../components/Ledger.astro";
+import Nav from "../components/Nav.astro";
+import Photography from "../components/Photography.astro";
+import Timeline from "../components/Timeline.astro";
+import Walkthrough from "../components/Walkthrough.astro";
+import { SITE } from "../config";
+import Layout from "../layouts/Layout.astro";
+---
+
+<Layout title={`${SITE.name} · ${SITE.tagline}`} description={SITE.description}>
+  <Nav />
+  <main>
+    <Hero />
+    <Timeline />
+    <Walkthrough />
+    <Collision />
+    <Ledger />
+    <Photography />
+    <Corridor />
+    <Faq />
+    <Cta />
+  </main>
+  <Footer />
+</Layout>
+
+<script>
+  import { initMotion } from "../scripts/motion";
+  initMotion();
+</script>

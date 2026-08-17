@@ -1,0 +1,64 @@
+---
+const rows = [
+  {
+    n: "01",
+    name: "Inventory and faces",
+    line: "A board is not one slot. Face A and Face B book separately. A face with a draft or active contract cannot be switched off.",
+    detail:
+      "Each row in inventory is a physical structure. Faces carry the dates. Deactivating a face that still has a hold is rejected in the app and would still fail in Postgres."
+  },
+  {
+    n: "02",
+    name: "Contracts and payment rollups",
+    line: "Payment status is computed from recorded payments. Staff cannot mark a contract paid.",
+    detail:
+      "A trigger sums payment rows onto the contract. unpaid, partial, or paid follows the total. There is no writable payment-status field on the form."
+  },
+  {
+    n: "03",
+    name: "Inspections with photo evidence",
+    line: "New photos go to a private bucket. Staff open them with signed URLs.",
+    detail:
+      "Older public URLs still render so existing logs do not break. Field notes sit next to condition and whether action is still required."
+  },
+  {
+    n: "04",
+    name: "Client portal",
+    line: "Advertisers see their boards, contracts, and inspections. Nothing else.",
+    detail:
+      "Row-level security keeps a client on their own rows. They cannot run the table-wide contract-status job."
+  },
+  {
+    n: "05",
+    name: "Public availability page",
+    line: "Occupied ranges, rates, and the next open date. No login, no client names on the bars.",
+    detail:
+      "Sales can send /availability instead of exporting a spreadsheet. Month and 6-month views are the same Flip toggle you used above."
+  },
+  {
+    n: "06",
+    name: "Roles and row-level security",
+    line: "Clients read their rows. Sales and admin write. Overlap lives in a GiST exclusion constraint.",
+    detail:
+      "contracts_no_overlapping_bookings is a database constraint, not a toast. Two active or draft contracts on one face in the same dates cannot both commit."
+  }
+];
+---
+
+<section class="wrap py-16" data-ledger>
+  <h2 class="display text-[clamp(2rem,5vw,3.5rem)]">What ships with the dashboard</h2>
+  <div class="mt-10">
+    {
+      rows.map((row) => (
+        <button class="ledger-row py-5" type="button" data-row>
+          <div class="grid gap-3 md:grid-cols-[4rem_minmax(0,16rem)_1fr] md:items-baseline">
+            <span class="mono text-sm">{row.n}</span>
+            <span class="font-semibold">{row.name}</span>
+            <span>{row.line}</span>
+          </div>
+          <p class="ledger-detail section-copy mt-4 mb-0">{row.detail}</p>
+        </button>
+      ))
+    }
+  </div>
+</section>

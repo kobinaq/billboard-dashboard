@@ -1,0 +1,31 @@
+<section class="wrap py-16" data-collision>
+  <h2 class="display text-[clamp(2rem,5vw,3.5rem)]">Drag a second booking onto a sold face</h2>
+  <p class="section-copy mt-4">
+    Accra Mall Face A is already held by an active contract. The second bar is the
+    booking you are trying to sneak in. Arrow keys also move it.
+  </p>
+
+  <p class="mono mt-8 mb-2 text-sm">ACC-001 · Face A · 1 Aug – 31 Jan</p>
+  <div
+    class="track h-16"
+    data-track
+  >
+    <div
+      class="bar-occupied absolute top-3 h-10 w-[32%] px-3 py-2 text-sm"
+      style="left: 36%"
+      data-booked
+    >
+      Held
+    </div>
+    <div
+      class="absolute top-3 h-10 w-[22%] cursor-grab bg-[#f97316] px-3 py-2 text-sm text-[#142f25]"
+      data-draft
+    >
+      New booking
+    </div>
+  </div>
+  <p class="collision-error" data-error></p>
+  <p class="section-copy mt-6">
+    This is not a validation message. It is the database refusing.
+  </p>
+</section>

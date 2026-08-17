@@ -1,0 +1,40 @@
+---
+import { Picture } from "astro:assets";
+import accra from "../assets/photos/accra-highway.png";
+import kumasi from "../assets/photos/kumasi-harper.png";
+---
+
+<section class="py-8">
+  <figure class="m-0">
+    <div class="photo-band" data-photo>
+      <Picture
+        src={accra}
+        alt="A deep green vinyl billboard on a monopole above an Accra interchange, with trotros in the traffic below. The face has no lettering."
+        widths={[960, 1440, 1920]}
+        sizes="100vw"
+        quality={60}
+        formats={["avif", "webp"]}
+        loading="lazy"
+      />
+    </div>
+    <figcaption class="wrap mt-4 text-sm">
+      Spintex interchange, Accra. The face is blank vinyl. The booking is the product, not the creative.
+    </figcaption>
+  </figure>
+  <figure class="mt-16 m-0">
+    <div class="photo-band" data-photo>
+      <Picture
+        src={kumasi}
+        alt="A plain amber vinyl billboard above shops and hawkers on a Kumasi street. The face has no lettering."
+        widths={[960, 1440, 1920]}
+        sizes="100vw"
+        quality={60}
+        formats={["avif", "webp"]}
+        loading="lazy"
+      />
+    </div>
+    <figcaption class="wrap mt-4 text-sm">
+      Harper Road, Kumasi. Plain amber vinyl. No campaign on the face.
+    </figcaption>
+  </figure>
+</section>
