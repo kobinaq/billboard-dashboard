@@ -24,7 +24,8 @@ The app follows the structure described in the product prompt:
 - `src/context` for auth and app shell state
 - `src/hooks` for Supabase-backed data access
 - `src/lib` for constants, Supabase setup, and helpers
-- `supabase/schema.sql` for schema, RLS, triggers, and storage policies
+- `supabase/schema.sql` for a full bootstrap of schema, RLS, triggers, and storage policies
+- `supabase/migrations` for incremental SQL to apply on an existing project
 - public availability data is exposed through a sanitized Supabase RPC, not direct anonymous reads on private business tables
 - `.github/workflows/keep-alive.yml` for Supabase free-tier uptime support
 
@@ -57,14 +58,16 @@ npm start
 3. Confirm the buckets exist:
    - `billboard-media` public
    - `contract-artwork` private
-4. Deploy the Edge Functions:
+   - `inspection-photos` private
+4. On an existing project, do not re-run the full schema file. Apply the files in [`supabase/migrations`](supabase/migrations) in filename order instead.
+5. Deploy the Edge Functions:
 
 ```bash
 supabase functions deploy admin-user-upsert
 supabase functions deploy admin-user-deactivate
 ```
 
-5. Set the required function secrets in Supabase:
+6. Set the required function secrets in Supabase:
 
 ```bash
 supabase secrets set PROJECT_URL=your_supabase_url
@@ -75,10 +78,10 @@ supabase secrets set SITE_URL=https://your-app-url
 
 The Edge Functions also accept `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` as fallback names for local compatibility.
 
-6. In Authentication, create the initial admin user manually.
-7. Update that user in `profiles` so `role = 'admin'`.
-8. Optional: run [`supabase/seed.sql`](supabase/seed.sql) to populate removable sample data for dashboard, calendar, inspections, and payments.
-9. Seed any additional regions or billboard types in the Settings UI or directly in the database.
+7. In Authentication, create the initial admin user manually.
+8. Update that user in `profiles` so `role = 'admin'`. Signup always creates a `client` profile, so this SQL step is required.
+9. Optional: run [`supabase/seed.sql`](supabase/seed.sql) to populate removable sample data for dashboard, calendar, inspections, and payments.
+10. Seed any additional regions or billboard types in the Settings UI or directly in the database.
 
 ## Initial Admin User
 

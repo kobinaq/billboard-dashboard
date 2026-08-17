@@ -1,10 +1,11 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Card } from "components/ui/Card";
 import { EmptyState } from "components/ui/EmptyState";
 import { LoadingSpinner } from "components/ui/LoadingSpinner";
 import { StatusBadge } from "components/ui/StatusBadge";
 import { useInspections } from "hooks/useInspections";
+import { resolveStoredFileUrl } from "lib/storage";
 import { formatDate } from "lib/utils";
 
 export default function InspectionDetail() {
@@ -41,14 +42,7 @@ export default function InspectionDetail() {
           {inspection.inspection_photos?.length ? (
             <div className="grid gap-4 sm:grid-cols-2">
               {inspection.inspection_photos.map((photo) => (
-                <figure key={photo.id} className="space-y-2">
-                  <img
-                    src={photo.photo_url}
-                    alt={photo.caption || "Inspection"}
-                    className="h-48 w-full rounded-[1.5rem] object-cover"
-                  />
-                  <figcaption className="text-sm text-slate-500">{photo.caption || "No caption"}</figcaption>
-                </figure>
+                <InspectionPhoto key={photo.id} photo={photo} />
               ))}
             </div>
           ) : (
@@ -57,6 +51,68 @@ export default function InspectionDetail() {
         </Card>
       </div>
     </div>
+  );
+}
+
+function InspectionPhoto({ photo }) {
+  const [src, setSrc] = useState("");
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+
+    async function load() {
+      try {
+        const url = await resolveStoredFileUrl("inspection-photos", photo.photo_url);
+        if (active) {
+          setSrc(url);
+        }
+      } catch {
+        if (active) {
+          setSrc("");
+        }
+      } finally {
+        if (active) {
+          setLoaded(true);
+        }
+      }
+    }
+
+    load();
+    return () => {
+      active = false;
+    };
+  }, [photo.photo_url]);
+
+  if (!loaded) {
+    return (
+      <figure className="space-y-2">
+        <div className="h-48 rounded-[1.5rem] bg-slate-100" />
+        <figcaption className="text-sm text-slate-500">{photo.caption || "No caption"}</figcaption>
+      </figure>
+    );
+  }
+
+  if (!src) {
+    return (
+      <figure className="space-y-2">
+        <div className="flex h-48 items-center justify-center rounded-[1.5rem] bg-slate-100 text-sm text-slate-500">
+          Photo unavailable
+        </div>
+        <figcaption className="text-sm text-slate-500">{photo.caption || "No caption"}</figcaption>
+      </figure>
+    );
+  }
+
+  return (
+    <figure className="space-y-2">
+      <img
+        src={src}
+        alt={photo.caption || "Inspection"}
+        className="h-48 w-full rounded-[1.5rem] object-cover"
+      />
+      <figcaption className="text-sm text-slate-500">{photo.caption || "No caption"}</figcaption>
+    </figure>
   );
 }
 

@@ -1,4 +1,5 @@
 create extension if not exists pgcrypto;
+create extension if not exists btree_gist;
 
 create or replace function public.set_current_timestamp()
 returns trigger
@@ -28,7 +29,7 @@ begin
     new.id,
     coalesce(new.raw_user_meta_data ->> 'full_name', split_part(new.email, '@', 1)),
     new.email,
-    coalesce(new.raw_user_meta_data ->> 'role', 'client'),
+    'client',
     new.raw_user_meta_data ->> 'company_name'
   )
   on conflict (id) do nothing;
@@ -178,6 +179,8 @@ create table if not exists public.contracts (
   constraint contracts_dates_valid check (end_date >= start_date)
 );
 
+create sequence if not exists public.contract_number_seq;
+
 alter table public.contracts
   add column if not exists billboard_face_id uuid references public.billboard_faces(id) on delete restrict;
 
@@ -306,6 +309,18 @@ as $$
   select public.current_role() = 'client';
 $$;
 
+select setval(
+  'public.contract_number_seq',
+  coalesce(
+    (
+      select max((regexp_match(contract_number, 'TKA-\d{4}-(\d{4})'))[1]::integer)
+      from public.contracts
+      where contract_number ~ '^TKA-\d{4}-\d{4}$'
+    ),
+    0
+  )
+);
+
 create or replace function public.generate_contract_number()
 returns trigger
 language plpgsql
@@ -319,12 +334,7 @@ begin
   end if;
 
   contract_year := to_char(coalesce(new.start_date, current_date), 'YYYY');
-
-  select coalesce(max((regexp_match(contract_number, 'TKA-\d{4}-(\d{4})'))[1]::integer), 0) + 1
-  into next_number
-  from public.contracts
-  where contract_number like 'TKA-' || contract_year || '-%';
-
+  next_number := nextval('public.contract_number_seq');
   new.contract_number := format('TKA-%s-%s', contract_year, lpad(next_number::text, 4, '0'));
   return new;
 end;
@@ -356,26 +366,6 @@ begin
   end if;
 
   new.billboard_id := face_billboard_id;
-  return new;
-end;
-$$;
-
-create or replace function public.prevent_contract_overlap()
-returns trigger
-language plpgsql
-as $$
-begin
-  if exists (
-    select 1
-    from public.contracts c
-    where c.billboard_face_id = new.billboard_face_id
-      and c.id <> coalesce(new.id, gen_random_uuid())
-      and c.status in ('draft', 'active')
-      and daterange(c.start_date, c.end_date, '[]') && daterange(new.start_date, new.end_date, '[]')
-  ) then
-    raise exception 'Billboard face is already booked for the selected date range.';
-  end if;
-
   return new;
 end;
 $$;
@@ -413,7 +403,7 @@ begin
     select
       id,
       case
-        when status = 'cancelled' then status
+        when status in ('cancelled', 'draft') then status
         when end_date < current_date then 'expired'
         when start_date <= current_date and end_date >= current_date then 'active'
         else status
@@ -649,9 +639,24 @@ before insert or update of billboard_face_id, billboard_id on public.contracts
 for each row execute function public.sync_contract_billboard_from_face();
 
 drop trigger if exists contracts_prevent_overlap on public.contracts;
-create trigger contracts_prevent_overlap
-before insert or update on public.contracts
-for each row execute function public.prevent_contract_overlap();
+drop function if exists public.prevent_contract_overlap();
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'contracts_no_overlapping_bookings'
+  ) then
+    alter table public.contracts
+      add constraint contracts_no_overlapping_bookings
+      exclude using gist (
+        billboard_face_id with =,
+        daterange(start_date, end_date, '[]') with &&
+      )
+      where (status in ('draft', 'active'));
+  end if;
+end $$;
 
 drop trigger if exists contracts_set_total_value on public.contracts;
 create trigger contracts_set_total_value
@@ -731,6 +736,26 @@ alter table public.inspection_photos enable row level security;
 alter table public.payments enable row level security;
 
 grant execute on function public.public_billboard_availability() to anon, authenticated;
+
+revoke all on function public.sync_contract_statuses() from public;
+revoke all on function public.sync_contract_statuses() from anon;
+grant execute on function public.sync_contract_statuses() to authenticated;
+
+do $$
+begin
+  create extension if not exists pg_cron;
+  perform cron.unschedule(jobid)
+  from cron.job
+  where jobname = 'sync-contract-statuses-daily';
+  perform cron.schedule(
+    'sync-contract-statuses-daily',
+    '15 0 * * *',
+    'select public.sync_contract_statuses()'
+  );
+exception
+  when others then
+    null;
+end $$;
 
 drop policy if exists "profiles_self_read" on public.profiles;
 create policy "profiles_self_read"
@@ -1008,8 +1033,10 @@ with check (public.is_sales_or_admin());
 insert into storage.buckets (id, name, public)
 values
   ('billboard-media', 'billboard-media', true),
-  ('contract-artwork', 'contract-artwork', false)
-on conflict (id) do nothing;
+  ('contract-artwork', 'contract-artwork', false),
+  ('inspection-photos', 'inspection-photos', false)
+on conflict (id) do update
+set public = excluded.public;
 
 drop policy if exists "billboard_media_read" on storage.objects;
 create policy "billboard_media_read"
@@ -1066,6 +1093,39 @@ using (
   )
 );
 
+drop policy if exists "inspection_photos_storage_read" on storage.objects;
+create policy "inspection_photos_storage_read"
+on storage.objects
+for select
+to authenticated
+using (
+  bucket_id = 'inspection-photos'
+  and public.is_active_user()
+  and (
+    public.current_role() in ('admin', 'sales', 'inspector')
+    or exists (
+      select 1
+      from public.inspection_logs il
+      join public.contracts c on c.billboard_id = il.billboard_id
+      join public.clients cl on cl.id = c.client_id
+      where split_part(name, '/', 1) = 'inspections'
+        and split_part(name, '/', 2) = il.id::text
+        and cl.profile_id = auth.uid()
+    )
+  )
+);
+
+drop policy if exists "inspection_photos_storage_write" on storage.objects;
+create policy "inspection_photos_storage_write"
+on storage.objects
+for insert
+to authenticated
+with check (
+  bucket_id = 'inspection-photos'
+  and public.is_active_user()
+  and public.current_role() in ('admin', 'sales', 'inspector')
+);
+
 drop policy if exists "contract_artwork_write" on storage.objects;
 create policy "contract_artwork_write"
 on storage.objects
@@ -1088,5 +1148,5 @@ with check (
 );
 
 comment on table public.billboards is 'Upload cover images to billboard-media under billboards/{billboardId}/cover-*';
-comment on table public.inspection_photos is 'Upload inspection images to billboard-media under inspections/{inspectionId}/{photoId}-*';
+comment on table public.inspection_photos is 'Store inspection image paths in inspection-photos under inspections/{inspectionId}/';
 comment on table public.contracts is 'Upload artwork to contract-artwork under contracts/{contractId}/artwork-*';

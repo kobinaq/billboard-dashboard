@@ -15,7 +15,7 @@ import { useAuth } from "context/AuthContext";
 import { useBillboards } from "hooks/useBillboards";
 import { useInspections } from "hooks/useInspections";
 import { CONDITIONS } from "lib/constants";
-import { uploadPublicFile } from "lib/storage";
+import { uploadPrivateFile } from "lib/storage";
 import { getErrorMessage } from "lib/utils";
 
 const schema = z.object({
@@ -87,15 +87,15 @@ export default function InspectionForm() {
       if (photoEntries.length) {
         await Promise.all(
           photoEntries.map(async (entry) => {
-            const { publicUrl } = await uploadPublicFile(
-              "billboard-media",
+            const { path } = await uploadPrivateFile(
+              "inspection-photos",
               `inspections/${inspection.id}`,
               entry.file
             );
 
             await saveInspectionPhoto({
               inspection_id: inspection.id,
-              photo_url: publicUrl,
+              photo_url: path,
               caption: entry.caption || null
             });
           })
