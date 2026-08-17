@@ -2,9 +2,16 @@
 import { SITE } from "../config";
 ---
 
-<section class="wrap pb-20 pt-10 md:pt-16">
+<section class="wrap pb-24 pt-12 md:pt-20">
   <h1 class="display hero-title" data-hero-title>
-    Every face. Every date. No <span data-wdth>collisions</span>.
+    Sell the face that is actually <span data-wdth>open</span>.
   </h1>
-  <p class="section-copy mt-8 max-w-xl text-lg">{SITE.description}</p>
+  <p class="section-copy mt-8 max-w-2xl text-xl">
+    {SITE.description} When a client asks, you answer in seconds instead of checking
+    three tabs.
+  </p>
+  <div class="hero-actions mt-8">
+    <a class="cta" href={SITE.walkthroughMailto}>Book a walkthrough</a>
+    <a class="cta cta-ghost" data-scroll href="#product">See availability</a>
+  </div>
 </section>

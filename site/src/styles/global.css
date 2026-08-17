@@ -121,6 +121,7 @@ a.plain {
 .cta {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   min-height: 2.75rem;
   padding: 0 1rem;
   border: 1px solid var(--color-ink);
@@ -147,6 +148,15 @@ a.plain {
   border-color: #ea580c;
 }
 
+.cta-ghost {
+  background: transparent;
+  color: var(--color-ink);
+}
+
+.cta-ghost:hover {
+  background: color-mix(in srgb, var(--color-ink) 6%, transparent);
+}
+
 .nav-cta {
   background: transparent;
   color: var(--color-ink);
@@ -155,6 +165,12 @@ a.plain {
 .nav-cta:hover {
   background: var(--color-ink);
   color: var(--color-paper);
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
 }
 
 button {
@@ -272,6 +288,23 @@ details.faq[open] > summary::after {
   cursor: pointer;
   text-align: left;
   width: 100%;
+}
+
+.ledger-row::after {
+  content: "+";
+  position: absolute;
+  right: 0;
+  top: 1.25rem;
+  font-family: var(--font-mono);
+}
+
+.ledger-row {
+  position: relative;
+  padding-right: 2rem;
+}
+
+.ledger-row.is-open::after {
+  content: "–";
 }
 
 .ledger-row:last-child {

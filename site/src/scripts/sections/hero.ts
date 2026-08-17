@@ -12,12 +12,7 @@ export function initHero(): void {
     mask: "lines",
     autoSplit: true,
     onSplit(self) {
-      const splitWord = self.words.find((word) =>
-        word.textContent?.toLowerCase().includes("collisions")
-      );
-      const wdth =
-        qs(title, "[data-wdth]") ??
-        (splitWord instanceof HTMLElement ? splitWord : null);
+      const wdth = qs(title, "[data-wdth]");
 
       const reveal = gsap.from(self.lines, {
         yPercent: 110,

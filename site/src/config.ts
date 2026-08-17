@@ -1,8 +1,8 @@
 export const SITE = {
   name: "Boardbook",
-  tagline: "Every face. Every date. No collisions.",
+  tagline: "Sell the face that is actually open.",
   description:
-    "Contracts, payments, inspections, and a public availability page. Double-booking is rejected by the database, not by a spreadsheet's honor system.",
+    "Inventory, contracts, payments, and inspections in one place. A double booking is rejected by the database, not a spreadsheet.",
   walkthroughMailto:
     "mailto:kobinastudios@gmail.com?subject=Boardbook%20walkthrough",
   contactEmail: "kobinastudios@gmail.com",
