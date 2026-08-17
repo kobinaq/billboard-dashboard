@@ -10,6 +10,7 @@ export const userUpsertSchema = z
     role: z.enum(["admin", "sales", "inspector", "client"]),
     companyName: z.string().optional().or(z.literal("")),
     clientId: z.string().uuid().optional(),
+    reactivate: z.boolean().optional(),
     contactName: z.string().optional().or(z.literal("")),
     contactPhone: z.string().optional().or(z.literal("")),
     industry: z.string().optional().or(z.literal("")),

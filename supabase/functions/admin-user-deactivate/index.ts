@@ -59,6 +59,18 @@ Deno.serve(async (request) => {
       throw updateError;
     }
 
+    const { error: signOutError } = await auth.serviceClient.auth.admin.signOut(
+      payload.userId,
+      "global"
+    );
+    if (signOutError) {
+      return jsonResponse({
+        userId: payload.userId,
+        deactivated: true,
+        message: "User deactivated. Existing sessions may last until they expire."
+      });
+    }
+
     return jsonResponse({
       userId: payload.userId,
       deactivated: true,

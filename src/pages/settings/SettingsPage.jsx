@@ -57,6 +57,7 @@ const userSchema = z
     phone: z.string().optional(),
     role: z.string().min(1, "Choose a role."),
     clientId: z.string().optional(),
+    reactivate: z.boolean().optional(),
     companyName: z.string().optional(),
     contactName: z.string().optional(),
     contactPhone: z.string().optional(),
@@ -249,6 +250,30 @@ export default function SettingsPage() {
     }
   }
 
+  async function confirmReactivate(user) {
+    const linkedClient = (data?.clients || []).find((client) => client.profile_id === user.id);
+    setSubmitting(true);
+    try {
+      const result = await upsertManagedUser({
+        mode: "update",
+        userId: user.id,
+        fullName: user.full_name,
+        email: user.email,
+        phone: user.phone || "",
+        role: user.role,
+        reactivate: true,
+        clientId: linkedClient?.id,
+        companyName: user.company_name || linkedClient?.company_name || undefined
+      });
+      toast.success(result.message || "User reactivated.");
+      await refresh();
+    } catch (submitError) {
+      toast.error(getErrorMessage(submitError));
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   async function confirmDeactivate() {
     if (!selectedUser) {
       return;
@@ -392,6 +417,15 @@ export default function SettingsPage() {
                 key: "deactivated_at",
                 header: "Deactivated",
                 render: (row) => formatDate(row.deactivated_at)
+              },
+              {
+                key: "actions",
+                header: "Actions",
+                render: (row) => (
+                  <Button variant="secondary" onClick={() => confirmReactivate(row)}>
+                    Reactivate
+                  </Button>
+                )
               }
             ]}
             rows={inactiveProfiles}
@@ -403,7 +437,7 @@ export default function SettingsPage() {
         <Card className="space-y-4">
           <h4 className="text-lg font-semibold">Admin notes</h4>
           <p className="text-sm text-slate-500">
-            Inactive users are blocked after the next profile check even if they still have a valid auth session.
+            Inactive users are signed out immediately. Editing an active user no longer turns them back on.
           </p>
           <p className="text-sm text-slate-500">
             Regions and billboard types are now managed directly from this screen.

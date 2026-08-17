@@ -62,3 +62,19 @@ export async function createSignedFileUrl(bucket, path, expiresIn = 3600) {
 
   return data.signedUrl;
 }
+
+export function isRemoteFileUrl(value) {
+  return /^https?:\/\//i.test(value || "");
+}
+
+export async function resolveStoredFileUrl(bucket, stored, expiresIn = 3600) {
+  if (!stored) {
+    return "";
+  }
+
+  if (isRemoteFileUrl(stored)) {
+    return stored;
+  }
+
+  return createSignedFileUrl(bucket, stored, expiresIn);
+}

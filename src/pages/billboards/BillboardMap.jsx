@@ -8,6 +8,7 @@ import { LoadingSpinner } from "components/ui/LoadingSpinner";
 import { PageHeader } from "components/shared/PageHeader";
 import { SetupNotice } from "components/shared/SetupNotice";
 import { useBillboards } from "hooks/useBillboards";
+import { escapeHtml } from "lib/utils";
 
 mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_TOKEN || "";
 
@@ -57,10 +58,12 @@ export default function BillboardMap() {
       const popup = new mapboxgl.Popup({ offset: 16 }).setHTML(
         `
           <div style="padding: 4px 2px; min-width: 180px;">
-            <strong>${board.name}</strong>
-            <p style="margin: 8px 0 4px; font-size: 12px;">${board.status}</p>
-            <p style="margin: 0 0 8px; font-size: 12px;">${board.contracts?.[0]?.clients?.company_name || "No active client"}</p>
-            <a href="/billboards/${board.id}" style="color: #1b4332; font-weight: 600;">View details</a>
+            <strong>${escapeHtml(board.name)}</strong>
+            <p style="margin: 8px 0 4px; font-size: 12px;">${escapeHtml(board.status)}</p>
+            <p style="margin: 0 0 8px; font-size: 12px;">${escapeHtml(
+              board.contracts?.[0]?.clients?.company_name || "No active client"
+            )}</p>
+            <a href="/billboards/${encodeURIComponent(board.id)}" style="color: #1b4332; font-weight: 600;">View details</a>
           </div>
         `
       );

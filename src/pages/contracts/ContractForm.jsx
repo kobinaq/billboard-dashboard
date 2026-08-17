@@ -8,12 +8,13 @@ import { Card } from "components/ui/Card";
 import { FormActions } from "components/ui/FormActions";
 import { Input } from "components/ui/Input";
 import { Select } from "components/ui/Select";
+import { StatusBadge } from "components/ui/StatusBadge";
 import { Textarea } from "components/ui/Textarea";
 import { PageHeader } from "components/shared/PageHeader";
 import { useBillboards } from "hooks/useBillboards";
 import { useClients } from "hooks/useClients";
 import { useContracts } from "hooks/useContracts";
-import { CONTRACT_STATUSES, PAYMENT_STATUSES } from "lib/constants";
+import { CONTRACT_FORM_STATUSES } from "lib/constants";
 import { formatCurrency, getErrorMessage } from "lib/utils";
 
 const schema = z
@@ -25,8 +26,7 @@ const schema = z
     end_date: z.string().min(1),
     monthly_rate: z.coerce.number().positive(),
     currency: z.string().default("GHS"),
-    status: z.string().min(1),
-    payment_status: z.string().min(1),
+    status: z.enum(["draft", "active", "cancelled", "expired"]),
     notes: z.string().optional()
   })
   .refine((values) => new Date(values.end_date) >= new Date(values.start_date), {
@@ -60,7 +60,6 @@ export default function ContractForm() {
       monthly_rate: current?.monthly_rate || "",
       currency: current?.currency || "GHS",
       status: current?.status || "draft",
-      payment_status: current?.payment_status || "unpaid",
       notes: current?.notes || ""
     }
   });
@@ -111,7 +110,11 @@ export default function ContractForm() {
   async function onSubmit(values) {
     setSubmitting(true);
     try {
-      await saveContract(values, id);
+      const payload = { ...values };
+      if (payload.status === "expired") {
+        delete payload.status;
+      }
+      await saveContract(payload, id);
       toast.success(id ? "Contract updated." : "Contract created.");
       navigate("/contracts");
     } catch (error) {
@@ -160,13 +163,25 @@ export default function ContractForm() {
           <Input label="End date" type="date" error={errors.end_date?.message} {...register("end_date")} />
           <Input label="Monthly rate" type="number" error={errors.monthly_rate?.message} {...register("monthly_rate")} />
           <Input label="Currency" error={errors.currency?.message} {...register("currency")} />
-          <Select label="Status" options={CONTRACT_STATUSES} error={errors.status?.message} {...register("status")} />
           <Select
-            label="Payment status"
-            options={PAYMENT_STATUSES}
-            error={errors.payment_status?.message}
-            {...register("payment_status")}
+            label="Status"
+            options={
+              current?.status === "expired"
+                ? ["expired", ...CONTRACT_FORM_STATUSES]
+                : CONTRACT_FORM_STATUSES
+            }
+            error={errors.status?.message}
+            {...register("status")}
           />
+          <div className="rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3">
+            <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Payment status</p>
+            <div className="mt-2">
+              <StatusBadge value={current?.payment_status || "unpaid"} />
+            </div>
+            <p className="mt-2 text-sm text-slate-500">
+              Updates from recorded payments, not from this form.
+            </p>
+          </div>
           <div className="md:col-span-2">
             <Textarea label="Notes" {...register("notes")} />
           </div>
@@ -185,7 +200,7 @@ export default function ContractForm() {
         <Card>
           <h4 className="text-lg font-semibold">Availability guidance</h4>
           <p className="mt-3 text-sm text-slate-500">
-            Face options update based on the selected date range to avoid overlapping active or draft contracts on the same face. The database trigger in `supabase/schema.sql` still performs the final server-side booking check.
+            Face options update based on the selected date range to avoid overlapping active or draft contracts on the same face. Postgres still rejects overlapping bookings with the `contracts_no_overlapping_bookings` exclusion constraint.
           </p>
         </Card>
         <FormActions submitting={submitting} onCancel={() => navigate("/contracts")} />

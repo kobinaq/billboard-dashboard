@@ -12,7 +12,6 @@ It also includes a public `/availability` page where prospects can view billboar
 - Supabase Auth, Postgres, Storage, and RLS
 - React Hook Form + Zod
 - Mapbox GL JS
-- Recharts
 - react-hot-toast
 
 ## Project Structure
@@ -24,7 +23,8 @@ The app follows the structure described in the product prompt:
 - `src/context` for auth and app shell state
 - `src/hooks` for Supabase-backed data access
 - `src/lib` for constants, Supabase setup, and helpers
-- `supabase/schema.sql` for schema, RLS, triggers, and storage policies
+- `supabase/schema.sql` for a full bootstrap of schema, RLS, triggers, and storage policies
+- `supabase/migrations` for incremental SQL to apply on an existing project
 - public availability data is exposed through a sanitized Supabase RPC, not direct anonymous reads on private business tables
 - `.github/workflows/keep-alive.yml` for Supabase free-tier uptime support
 
@@ -57,14 +57,18 @@ npm start
 3. Confirm the buckets exist:
    - `billboard-media` public
    - `contract-artwork` private
-4. Deploy the Edge Functions:
+   - `inspection-photos` private
+
+   New inspection uploads go to `inspection-photos`. Rows that already store a public `billboard-media` URL keep working until those photos are re-uploaded.
+4. On an existing project, do not re-run the full schema file. Apply the files in [`supabase/migrations`](supabase/migrations) in filename order instead. If `contracts_no_overlapping_bookings` fails, overlapping draft or active rows already exist. Fix those rows, then rerun that file. The old overlap trigger stays in place until the constraint succeeds.
+5. Deploy the Edge Functions:
 
 ```bash
 supabase functions deploy admin-user-upsert
 supabase functions deploy admin-user-deactivate
 ```
 
-5. Set the required function secrets in Supabase:
+6. Set the required function secrets in Supabase:
 
 ```bash
 supabase secrets set PROJECT_URL=your_supabase_url
@@ -75,10 +79,10 @@ supabase secrets set SITE_URL=https://your-app-url
 
 The Edge Functions also accept `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` as fallback names for local compatibility.
 
-6. In Authentication, create the initial admin user manually.
-7. Update that user in `profiles` so `role = 'admin'`.
-8. Optional: run [`supabase/seed.sql`](supabase/seed.sql) to populate removable sample data for dashboard, calendar, inspections, and payments.
-9. Seed any additional regions or billboard types in the Settings UI or directly in the database.
+7. In Authentication, create the initial admin user manually.
+8. Update that user in `profiles` so `role = 'admin'`. Signup always creates a `client` profile, so this SQL step is required.
+9. Optional: run [`supabase/seed.sql`](supabase/seed.sql) to populate removable sample data for dashboard, calendar, inspections, and payments.
+10. Seed any additional regions or billboard types in the Settings UI or directly in the database.
 
 ## Initial Admin User
 

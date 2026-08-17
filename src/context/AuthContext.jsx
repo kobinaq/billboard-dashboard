@@ -1,5 +1,6 @@
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -7,6 +8,7 @@ import {
 } from "react";
 import toast from "react-hot-toast";
 import { ROLE_HOME } from "lib/constants";
+import { deriveAuthState, isActiveAuth } from "lib/authState";
 import { getErrorMessage } from "lib/utils";
 import { requireSupabase, supabase } from "lib/supabase";
 
@@ -33,22 +35,25 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState("");
 
-  useEffect(() => {
-    let active = true;
-    const inactiveMessage =
-      "Your account has been deactivated. Contact an administrator.";
-
-    async function handleInactiveProfile() {
+  const loadProfile = useCallback(async (userId) => {
+    const nextProfile = await fetchProfile(userId);
+    if (nextProfile?.is_active === false) {
       if (supabase) {
         await supabase.auth.signOut();
       }
-
-      if (active) {
-        setSession(null);
-        setProfile(null);
-        setAuthError(inactiveMessage);
-      }
+      setSession(null);
+      setProfile(null);
+      setAuthError("Your account has been deactivated. Contact an administrator.");
+      return null;
     }
+
+    setProfile(nextProfile);
+    setAuthError("");
+    return nextProfile;
+  }, []);
+
+  useEffect(() => {
+    let active = true;
 
     async function bootstrap() {
       if (!supabase) {
@@ -68,23 +73,18 @@ export function AuthProvider({ children }) {
 
       if (currentSession?.user?.id) {
         try {
-          const nextProfile = await fetchProfile(currentSession.user.id);
-          if (nextProfile?.is_active === false) {
-            await handleInactiveProfile();
-            setLoading(false);
-            return;
-          }
-          if (active) {
-            setProfile(nextProfile);
-          }
+          await loadProfile(currentSession.user.id);
         } catch (error) {
           if (active) {
+            setProfile(null);
             setAuthError(getErrorMessage(error));
           }
         }
       }
 
-      setLoading(false);
+      if (active) {
+        setLoading(false);
+      }
     }
 
     bootstrap();
@@ -96,14 +96,7 @@ export function AuthProvider({ children }) {
           setSession(nextSession);
           if (nextSession?.user?.id) {
             try {
-              const nextProfile = await fetchProfile(nextSession.user.id);
-              if (nextProfile?.is_active === false) {
-                await handleInactiveProfile();
-                setLoading(false);
-                return;
-              }
-              setProfile(nextProfile);
-              setAuthError("");
+              await loadProfile(nextSession.user.id);
             } catch (error) {
               setProfile(null);
               setAuthError(getErrorMessage(error));
@@ -119,20 +112,22 @@ export function AuthProvider({ children }) {
       active = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [loadProfile]);
+
+  const auth = deriveAuthState({ session, profile, loading, error: authError });
 
   const value = useMemo(
     () => ({
-      session,
+      auth,
+      session: auth.kind === "active" ? auth.session : session,
       user: session?.user || null,
-      profile,
-      role: profile?.is_active ? profile.role : null,
-      isActiveUser: Boolean(profile?.is_active),
-      loading,
-      authError,
-      isAuthenticated: Boolean(session?.user && profile?.is_active !== false),
-      defaultRoute:
-        profile?.role && profile?.is_active ? ROLE_HOME[profile.role] : "/login",
+      profile: auth.kind === "active" ? auth.profile : profile,
+      role: auth.kind === "active" ? auth.role : null,
+      isActiveUser: auth.kind === "active",
+      loading: auth.kind === "loading",
+      authError: auth.error || "",
+      isAuthenticated: isActiveAuth(auth),
+      defaultRoute: auth.kind === "active" ? ROLE_HOME[auth.role] : "/login",
       async login({ email, password }) {
         const client = requireSupabase();
         const { error } = await client.auth.signInWithPassword({
@@ -158,17 +153,24 @@ export function AuthProvider({ children }) {
 
         toast.success("Signed out.");
       },
-      async refreshProfile() {
+      async retryProfile() {
         if (!session?.user?.id) {
           return null;
         }
 
-        const nextProfile = await fetchProfile(session.user.id);
-        setProfile(nextProfile);
-        return nextProfile;
+        setLoading(true);
+        try {
+          return await loadProfile(session.user.id);
+        } catch (error) {
+          setProfile(null);
+          setAuthError(getErrorMessage(error));
+          return null;
+        } finally {
+          setLoading(false);
+        }
       }
     }),
-    [authError, loading, profile, session]
+    [auth, loadProfile, profile, session]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

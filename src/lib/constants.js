@@ -30,6 +30,8 @@ export const BILLBOARD_TYPES = ["traditional", "digital"];
 
 export const CONTRACT_STATUSES = ["draft", "active", "expired", "cancelled"];
 
+export const CONTRACT_FORM_STATUSES = ["draft", "active", "cancelled"];
+
 export const PAYMENT_STATUSES = ["unpaid", "partial", "paid"];
 
 export const CONDITIONS = ["excellent", "good", "fair", "poor", "critical"];

@@ -1,17 +1,13 @@
 import { addMonths, diffInDays, endOfMonth, startOfMonth } from "./utils";
 
 export function getClientVisibleContracts(contracts, profile) {
-  return (contracts || []).filter((contract) => {
-    const linkedProfileId = contract.clients?.profile_id;
-    if (linkedProfileId && profile?.id) {
-      return linkedProfileId === profile.id;
-    }
+  if (!profile?.id) {
+    return [];
+  }
 
-    return (
-      contract.clients?.contact_email?.toLowerCase() === profile?.email?.toLowerCase() ||
-      contract.clients?.company_name === profile?.company_name
-    );
-  });
+  return (contracts || []).filter(
+    (contract) => contract.clients?.profile_id === profile.id
+  );
 }
 
 function startOfWindow(contracts, fallbackDate) {

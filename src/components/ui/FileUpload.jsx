@@ -16,7 +16,7 @@ export function FileUpload({
             <UploadCloud className="h-5 w-5" />
           </div>
           <div>
-            <p className="font-medium">Drag files here or browse</p>
+            <p className="font-medium">Browse to upload</p>
             <p className="text-xs text-slate-500">
               {helperText || "Uploads are sent directly to Supabase Storage."}
             </p>

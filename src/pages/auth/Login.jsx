@@ -8,6 +8,7 @@ import toast from "react-hot-toast";
 import { Button } from "components/ui/Button";
 import { Card } from "components/ui/Card";
 import { Input } from "components/ui/Input";
+import { LoadingSpinner } from "components/ui/LoadingSpinner";
 import { useAuth } from "context/AuthContext";
 import { getErrorMessage } from "lib/utils";
 
@@ -20,7 +21,7 @@ export default function Login() {
   const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, defaultRoute, authError } = useAuth();
+  const { login, defaultRoute, authError, auth, retryProfile, loading } = useAuth();
   const {
     register,
     handleSubmit,
@@ -45,6 +46,14 @@ export default function Login() {
     } finally {
       setSubmitting(false);
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <LoadingSpinner label="Preparing your workspace..." />
+      </div>
+    );
   }
 
   return (
@@ -94,8 +103,13 @@ export default function Login() {
               {...register("password")}
             />
             {authError ? (
-              <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                {authError}
+              <div className="space-y-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                <p>{authError}</p>
+                {auth.kind === "error" ? (
+                  <Button type="button" variant="secondary" onClick={retryProfile}>
+                    Retry profile load
+                  </Button>
+                ) : null}
               </div>
             ) : null}
             <Button type="submit" className="w-full" disabled={submitting}>

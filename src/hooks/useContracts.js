@@ -2,15 +2,26 @@ import { useCallback } from "react";
 import { requireSupabase } from "lib/supabase";
 import { useAsyncResource } from "./useAsyncResource";
 
+async function syncContractStatuses(client) {
+  try {
+    await client.rpc("sync_contract_statuses");
+  } catch {
+    return false;
+  }
+
+  return true;
+}
+
 async function listContracts() {
   const client = requireSupabase();
+  await syncContractStatuses(client);
   const { data, error } = await client
     .from("contracts")
     .select(
       `
       *,
       clients(id, profile_id, company_name, contact_name, contact_email),
-      billboards(name, code, region, status, address),
+      billboards(id, name, code, region, status, address),
       billboard_faces(id, label, facing_direction),
       payments(id, amount, payment_date)
     `

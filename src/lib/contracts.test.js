@@ -20,7 +20,7 @@ describe("getClientVisibleContracts", () => {
     }
   ];
 
-  it("prefers linked profile ids for portal visibility", () => {
+  it("keeps contracts whose client is linked to the signed-in profile", () => {
     const visible = getClientVisibleContracts(contracts, {
       id: "profile-1",
       email: "mismatch@example.com",
@@ -31,7 +31,7 @@ describe("getClientVisibleContracts", () => {
     expect(visible[0].id).toBe("1");
   });
 
-  it("falls back to email or company matching when no profile id is present", () => {
+  it("does not treat matching email or company as portal access", () => {
     const visible = getClientVisibleContracts(
       [
         {
@@ -43,13 +43,22 @@ describe("getClientVisibleContracts", () => {
         }
       ],
       {
+        id: "profile-1",
         email: "portal@example.com",
         company_name: "Fallback Co"
       }
     );
 
-    expect(visible).toHaveLength(1);
-    expect(visible[0].id).toBe("3");
+    expect(visible).toHaveLength(0);
+  });
+
+  it("hides every contract when the profile has no id", () => {
+    expect(
+      getClientVisibleContracts(contracts, {
+        email: "client@example.com",
+        company_name: "BlueWave"
+      })
+    ).toEqual([]);
   });
 });
 
