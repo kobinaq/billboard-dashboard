@@ -30,7 +30,23 @@ import Layout from "../layouts/Layout.astro";
       <p class="mono m-0 ml-2 text-sm" data-window-label></p>
     </div>
 
-    <p class="mt-8 mb-0" data-avail-status>Loading faces.</p>
+    <p class="visually-hidden" data-avail-status aria-live="polite">Loading faces.</p>
+    <div class="mt-6" data-avail-skeleton>
+      <div class="min-w-[720px] overflow-x-auto">
+        {
+          [0, 1, 2, 3, 4].map(() => (
+            <div class="grid gap-4 border-t border-[var(--color-rule)] py-5 md:grid-cols-[280px_1fr]">
+              <div>
+                <div class="avail-skel h-5 w-48"></div>
+                <div class="avail-skel mt-2 h-4 w-64"></div>
+                <div class="avail-skel mt-3 h-4 w-36"></div>
+              </div>
+              <div class="avail-skel h-11 w-full"></div>
+            </div>
+          ))
+        }
+      </div>
+    </div>
     <div class="mt-6 overflow-x-auto" data-avail-board hidden>
       <div class="min-w-[720px]">
         <div class="avail-ticks" data-ticks></div>

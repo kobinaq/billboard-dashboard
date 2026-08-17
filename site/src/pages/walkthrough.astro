@@ -1,0 +1,59 @@
+---
+import Footer from "../components/Footer.astro";
+import Nav from "../components/Nav.astro";
+import { SITE } from "../config";
+import Layout from "../layouts/Layout.astro";
+---
+
+<Layout
+  title={`Book a walkthrough · ${SITE.name}`}
+  description="Leave a name, a company, and a way to reach you. We walk the product against your inventory."
+>
+  <Nav />
+  <main id="content" class="wrap py-12" data-walkthrough-lead>
+    <h1 class="display text-[clamp(2.5rem,7vw,5.5rem)]">Book a walkthrough.</h1>
+    <p class="section-copy mt-6">
+      Name, company, how many faces you run, and a phone or email. We walk the product
+      against your inventory. No signup on this page.
+    </p>
+
+    <form class="lead-form mt-10" data-walkthrough-form>
+      <label class="lead-field">
+        Name
+        <input name="fullName" type="text" autocomplete="name" maxlength="80" required />
+      </label>
+      <label class="lead-field">
+        Company
+        <input name="company" type="text" autocomplete="organization" maxlength="120" required />
+      </label>
+      <label class="lead-field">
+        Email
+        <input name="email" type="email" autocomplete="email" maxlength="120" />
+      </label>
+      <label class="lead-field">
+        Phone
+        <input name="phone" type="tel" autocomplete="tel" maxlength="40" />
+      </label>
+      <label class="lead-field">
+        How many faces do you run?
+        <input name="faceCount" type="number" inputmode="numeric" min="1" max="10000" required />
+      </label>
+      <label class="lead-hp" aria-hidden="true">
+        Website
+        <input name="website" type="text" tabindex="-1" autocomplete="off" />
+      </label>
+      <button class="cta" type="submit">Book a walkthrough</button>
+      <p class="lead-status mt-4 mb-0" data-walkthrough-status role="status" hidden></p>
+    </form>
+
+    <p class="section-copy mt-10" data-walkthrough-done hidden>
+      Received. We will use the email or phone you left.
+    </p>
+  </main>
+  <Footer />
+</Layout>
+
+<script>
+  import { initWalkthroughForm } from "../scripts/walkthrough-form";
+  initWalkthroughForm();
+</script>

@@ -363,6 +363,7 @@ function layoutBoard(root: HTMLElement, windowStart: number, span: TimelineSpan)
 function showState(root: HTMLElement, state: AvailState): void {
   const status = qs(root, "[data-avail-status]");
   const board = qs(root, "[data-avail-board]");
+  const skeleton = qs(root, "[data-avail-skeleton]");
   if (!status || !board) {
     return;
   }
@@ -370,22 +371,37 @@ function showState(root: HTMLElement, state: AvailState): void {
   switch (state.kind) {
     case "loading":
       status.hidden = false;
-      board.hidden = true;
+      status.classList.add("visually-hidden");
       status.textContent = "Loading faces.";
+      board.hidden = true;
+      if (skeleton) {
+        skeleton.hidden = false;
+      }
       return;
     case "error":
       status.hidden = false;
-      board.hidden = true;
+      status.classList.remove("visually-hidden");
       status.textContent = state.message;
+      board.hidden = true;
+      if (skeleton) {
+        skeleton.hidden = true;
+      }
       return;
     case "empty":
       status.hidden = false;
-      board.hidden = true;
+      status.classList.remove("visually-hidden");
       status.textContent = "No faces to show.";
+      board.hidden = true;
+      if (skeleton) {
+        skeleton.hidden = true;
+      }
       return;
     case "ready":
       status.hidden = true;
       board.hidden = false;
+      if (skeleton) {
+        skeleton.hidden = true;
+      }
       return;
     default: {
       const _exhaustive: never = state;

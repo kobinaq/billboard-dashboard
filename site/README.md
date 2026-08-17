@@ -1,6 +1,6 @@
 # Boardbook marketing site
 
-Static Astro page. `/` is this site. `/availability` is the live public board. The operator app is `/app`.
+`/` is this site. `/availability` is the live public board. `/walkthrough` is the lead form. The operator app is `/app`.
 
 From `site/`:
 

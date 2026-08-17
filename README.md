@@ -83,7 +83,17 @@ Marketing: `http://localhost:4321/`. That server proxies `/app` to the dashboard
 ```bash
 supabase functions deploy admin-user-upsert
 supabase functions deploy admin-user-deactivate
+supabase functions deploy walkthrough-lead
 ```
+
+Walkthrough form submissions land in `walkthrough_leads`. Admins can read that table. To also get an email for each lead:
+
+```bash
+supabase secrets set RESEND_API_KEY=your_resend_api_key
+supabase secrets set LEAD_TO_EMAIL=kobinastudios@gmail.com
+```
+
+`RESEND_FROM` is optional. Without a Resend key the row still saves.
 
 6. Set the required function secrets in Supabase:
 
@@ -195,7 +205,7 @@ If you are on the Supabase free tier:
 - `npm run build:web`
 - `npm --prefix site run budget` after a site build (ignores `site/dist/app`)
 - Run the SQL in `supabase/schema.sql`
-- Deploy `admin-user-upsert` and `admin-user-deactivate`
+- Deploy `admin-user-upsert`, `admin-user-deactivate`, and `walkthrough-lead`
 - Verify each role lands on the expected home route
 - Verify inactive users are signed out after profile bootstrap
 - Verify admin invite, update, client linking, and deactivate flows from Settings

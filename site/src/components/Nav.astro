@@ -4,6 +4,7 @@ import { SITE } from "../config";
 const path = Astro.url.pathname.replace(/\/$/, "") || "/";
 const home = path === "/";
 const onAvailability = path === SITE.availabilityPath;
+const onWalkthrough = path === SITE.walkthroughPath;
 ---
 
 <header class:list={["site-nav", !home && "is-scrolled"]} data-nav>
@@ -36,7 +37,9 @@ const onAvailability = path === SITE.availabilityPath;
         )
       }
       <a class="plain" href={SITE.loginPath}>Staff login</a>
-      <a class="cta nav-cta" href={SITE.walkthroughMailto}>Book a walkthrough</a>
+      <a class="cta nav-cta" href={SITE.walkthroughPath} aria-current={onWalkthrough ? "page" : undefined}>
+        Book a walkthrough
+      </a>
     </nav>
   </div>
 </header>
